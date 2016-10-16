@@ -1,0 +1,11 @@
+ratings:
+  file: u.data
+  format: csv
+  header: false
+  entity_type: rating
+items:
+  file: u.item
+  format: csv
+  header: false
+  entity_type: item
+  columns: [id, name]
