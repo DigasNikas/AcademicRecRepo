@@ -309,18 +309,12 @@ class SimilarityThread extends Thread {
                     }
 
                     double sim = itemSimilarity.similarity(itemId1, vec1, itemId2, vec2);
-                    sim = Math.round(sim * 100.0);
-                    sim = sim / 100.0;
+
                     if (threshold.retain(sim)) {
-                        if (itemSimilarity.isSymmetric()) {
-                            try {
-                                bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
-                            } catch (Exception e) {
-                                System.err.println(e.toString());
-                                e.printStackTrace(System.err);
-                                System.exit(1);
-                            }
-                        }
+                        compute(bufferedWriter,itemId1,itemId2,sim);
+                    } else {
+                        neighborStrategy.recompute(bufferedWriter,itemId1,itemId2,
+                                vec1, buildContext, itemSimilarity,threshold);
                     }
                 }
             }
@@ -345,4 +339,17 @@ class SimilarityThread extends Thread {
             System.exit(1);
         }
     }
+
+    private void compute(BufferedWriter bufferedWriter, Long itemId1, Long itemId2, double sim){
+        if (itemSimilarity.isSymmetric()) {
+            try {
+                bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
+            } catch (Exception e) {
+                System.err.println(e.toString());
+                e.printStackTrace(System.err);
+                System.exit(1);
+            }
+        }
+    }
+
 }
