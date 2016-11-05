@@ -41,9 +41,17 @@ public class SparseNeighborIterationStrategy implements NeighborIterationStrateg
         return new AdaptiveSparseItemIterator(context, context.itemVector(item).keySet(), lowerBound);
     }
     @Override
-    public void recompute(BufferedWriter bufferedWriter, Long itemId1, Long item, SparseVector vec1,
-                          ItemItemBuildContext buildContext, ItemSimilarity itemSimilarity, Threshold threshold){
-
+    public void recompute(BufferedWriter bufferedWriter, Long itemId1, Long itemId2, SparseVector vec1,
+                          ItemItemBuildContext buildContext, ItemSimilarity itemSimilarity, Threshold threshold, double sim){
+        if (itemSimilarity.isSymmetric()) {
+            try {
+                bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
+            } catch (Exception e) {
+                System.err.println(e.toString());
+                e.printStackTrace(System.err);
+                System.exit(1);
+            }
+        }
     }
 
 }

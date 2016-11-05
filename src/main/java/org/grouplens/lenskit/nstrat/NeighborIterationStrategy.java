@@ -48,6 +48,7 @@ public interface NeighborIterationStrategy {
      * @return An iterator over possible neighbors of {@code item}.
      */
     LongIterator neighborIterator(ItemItemBuildContext context, long item, boolean onlyAfter);
+
     void recompute(BufferedWriter bufferedWriter, Long itemId1, Long itemId2, SparseVector vec1,
-                          ItemItemBuildContext buildContext, ItemSimilarity itemSimilarity, Threshold threshold);
+                          ItemItemBuildContext buildContext, ItemSimilarity itemSimilarity, Threshold threshold, double sim);
 }

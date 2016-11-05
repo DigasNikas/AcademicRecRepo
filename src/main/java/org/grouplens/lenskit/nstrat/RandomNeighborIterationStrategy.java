@@ -32,7 +32,7 @@ public class RandomNeighborIterationStrategy implements NeighborIterationStrateg
     }
     @Override
     public void recompute(BufferedWriter bufferedWriter, Long itemId1, Long item, SparseVector vec1,
-                          ItemItemBuildContext buildContext, ItemSimilarity itemSimilarity, Threshold threshold){
+                          ItemItemBuildContext buildContext, ItemSimilarity itemSimilarity, Threshold threshold, double empty){
         Long iterationCount = 0L;
         AGAIN:
         while(true) {

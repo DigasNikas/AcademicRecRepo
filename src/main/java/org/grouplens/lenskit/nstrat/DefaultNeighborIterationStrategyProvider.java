@@ -20,6 +20,7 @@
  */
 package org.lenskit.knn.item.model;
 
+import org.grouplens.lenskit.nstrat.PopularityNeighborIterationStrategy;
 import org.grouplens.lenskit.nstrat.RandomNeighborIterationStrategy;
 import org.lenskit.inject.Transient;
 import org.lenskit.knn.item.ItemSimilarity;
@@ -50,7 +51,8 @@ public class DefaultNeighborIterationStrategyProvider implements Provider<Neighb
 
     @Override
     public NeighborIterationStrategy get() {
-        return new RandomNeighborIterationStrategy();
+        return new PopularityNeighborIterationStrategy();
+        //return new RandomNeighborIterationStrategy();
         /*if (similarity.isSparse()) {
             return new SparseNeighborIterationStrategy();
         } else {

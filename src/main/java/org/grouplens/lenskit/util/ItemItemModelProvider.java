@@ -314,7 +314,7 @@ class SimilarityThread extends Thread {
                         compute(bufferedWriter,itemId1,itemId2,sim);
                     } else {
                         neighborStrategy.recompute(bufferedWriter,itemId1,itemId2,
-                                vec1, buildContext, itemSimilarity,threshold);
+                                vec1, buildContext, itemSimilarity,threshold,sim);
                     }
                 }
             }
