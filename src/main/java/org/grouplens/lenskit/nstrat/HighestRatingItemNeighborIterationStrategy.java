@@ -1,7 +1,7 @@
 package org.grouplens.lenskit.nstrat;
 
 import it.unimi.dsi.fastutil.longs.LongIterator;
-import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.longs.LongList;
 import org.grouplens.lenskit.transform.threshold.Threshold;
 import org.grouplens.lenskit.vectors.SparseVector;
 import org.lenskit.knn.item.ItemSimilarity;
@@ -12,17 +12,15 @@ import org.lenskit.util.collections.LongUtils;
 import java.io.BufferedWriter;
 import java.util.*;
 
-
 /**
- * Created by diogo on 26-10-2016.
+ * Created by diogo on 06-11-2016.
  */
-public class PopularityNeighborIterationStrategy implements NeighborIterationStrategy{
-
+public class HighestRatingItemNeighborIterationStrategy implements NeighborIterationStrategy{
     @Override
     public LongIterator neighborIterator(ItemItemBuildContext context, long item, boolean onlyAfter) {
-        Long[] popular_items = itemsVectorSize(context).keySet().toArray(new Long[200]);
-        Set<Long> mySet = new HashSet<>(Arrays.asList(popular_items));
-        LongSet items = LongUtils.asLongSet(mySet);
+        Set<Long> key_set = itemsMeanRating(context).keySet();
+        List<Long> list = Arrays.asList(key_set.toArray(new Long[200]));
+        LongList items = LongUtils.asLongList(list);
         return items.iterator();
     }
     @Override
@@ -39,28 +37,32 @@ public class PopularityNeighborIterationStrategy implements NeighborIterationStr
         }
     }
 
-    private Map<Long,Integer> itemsVectorSize(ItemItemBuildContext context){
-        LongIterator it = context.getItems().iterator();
-        Map<Long,Integer> map = new HashMap<>();
-        while(it.hasNext()){
-            Long i = it.nextLong();
+    private Map<Long,Double> itemsMeanRating(ItemItemBuildContext context){
+        Map<Long,Double> map = new HashMap<>();
+        for(LongIterator out_iterator = context.getItems().iterator(); out_iterator.hasNext(); ){
+            Long i = out_iterator.nextLong();
             SparseVector vec = context.itemVector(i);
-            int count = vec.size();
-            map.put(i,count);
+            double size = vec.size();
+            double sum = 0;
+            for(Iterator in_iterator = vec.values().iterator(); in_iterator.hasNext();){
+                double k = (double) in_iterator.next();
+                sum += k;
+            }
+            Double mean = sum / size;
+            map.put(i,mean);
         }
         map = sortByValue(map);
-
         return map;
     }
 
-    public static <K, V extends Comparable<? super V>> Map<K, V>
+    private static <K, V extends Comparable<? super V>> Map<K, V>
     sortByValue( Map<K, V> map ) {
         List<Map.Entry<K, V>> list = new LinkedList<>(map.entrySet());
 
         Collections.sort(list, new Comparator<Map.Entry<K, V>>() {
             @Override
             public int compare(Map.Entry<K, V> o1, Map.Entry<K, V> o2) {
-                return (o2.getValue()).compareTo(o1.getValue());
+                return (o2.getValue()).compareTo(o1.getValue());  //Descending
             }
         });
 
