@@ -6,6 +6,3 @@ by user. As part of the project different strategies have been implemented. Thes
 
 The algorithm configuration is at the basket.groovy file, where we set every parameter
 required to run.
-
-The [LensKit home page][LensKit] has further documentation for LensKit, as well as
-links to their bug tracker and wiki.
