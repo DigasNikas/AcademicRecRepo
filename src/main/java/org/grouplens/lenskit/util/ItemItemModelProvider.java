@@ -57,7 +57,7 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
     private static final Logger logger = LoggerFactory.getLogger(ItemItemModelProvider.class);
 
     private final ItemSimilarity itemSimilarity;
-    private static ItemItemBuildContext buildContext;
+    private volatile static ItemItemBuildContext buildContext;
     private final Threshold threshold;
     private final NeighborIterationStrategy neighborStrategy;
     private final int minCommonUsers;
@@ -90,9 +90,9 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
         logger.info("building item-item model for {} items", nitems);
         logger.debug("using similarity function {}", itemSimilarity);
         logger.debug("similarity function is {}",
-                     itemSimilarity.isSparse() ? "sparse" : "non-sparse");
+                itemSimilarity.isSparse() ? "sparse" : "non-sparse");
         logger.debug("similarity function is {}",
-                     itemSimilarity.isSymmetric() ? "symmetric" : "non-symmetric");
+                itemSimilarity.isSymmetric() ? "symmetric" : "non-symmetric");
 
         ProgressLogger progress = ProgressLogger.create(logger)
                 .setCount(nitems)
@@ -105,21 +105,18 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
 
         int previous_items = 0;
         logger.info("Building {} SimilarityThreads", n_threads);
-        for(int i = 0; i < n_threads; i++ ){
+        for (int i = 0; i < n_threads; i++) {
 
-            double items_by = nitems / ((double)n_threads * (double)(n_threads-(i+1)) * (double)((n_threads-(i+1)) * (n_threads-(i+1))));
+            double items_by = nitems / ((double) n_threads * (double) (n_threads - (i + 1)) * (double) ((n_threads - (i + 1)) * (n_threads - (i + 1))));
             int items_by_thread = (int) items_by;
 
-            if (i < n_threads -1) {
+            if (i < n_threads - 1) {
                 LongIterator outer = allItems.subSet(previous_items, previous_items + items_by_thread).iterator();
-                Pool[i] = new Thread(new SimilarityThread(outer, itemSimilarity, i, buildContext,
-                        threshold, neighborStrategy, minCommonUsers));
-            }
-            else {
+                Pool[i] = new Thread(new SimilarityThread(outer, i));
+            } else {
                 int k = (nitems - ((n_threads - 1) * items_by_thread));
                 LongIterator outer = allItems.subSet(previous_items, previous_items + items_by_thread + k).iterator();
-                Pool[i] = new Thread(new SimilarityThread(outer, itemSimilarity, i, buildContext,
-                        threshold,neighborStrategy,minCommonUsers));
+                Pool[i] = new Thread(new SimilarityThread(outer, i));
             }
             previous_items = previous_items + items_by_thread;
             Pool[i].start();
@@ -133,9 +130,9 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
                 Pool[j].join();
             }
             for (int j = 0; j < n_threads; j++) {
-                Pool[j]=null;
+                Pool[j] = null;
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         timer.stop();
@@ -153,7 +150,7 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
 
         Long2ObjectMap<ScoredIdAccumulator> rows = buildRows(allItems, n_threads);
         timerX.stop();
-        logger.info("built object in {}",timerX);
+        logger.info("built object in {}", timerX);
 
         logger.info("Writing Object in rows.tmp");
         rowsWriter(rows);
@@ -194,7 +191,7 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
 
             while (true) {
                 Object obj = input.readObject();
-                Long2ObjectMap.Entry<ScoredIdAccumulator> e = (Long2ObjectMap.Entry<ScoredIdAccumulator>)obj;
+                Long2ObjectMap.Entry<ScoredIdAccumulator> e = (Long2ObjectMap.Entry<ScoredIdAccumulator>) obj;
                 results.put(e.getLongKey(), e.getValue().finishMap());
             }
         } catch (Exception e) {/* DO NOTHING JON SNOW */}
@@ -202,27 +199,27 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
         return results;
     }
 
-    private void rowsWriter(Long2ObjectMap<ScoredIdAccumulator> rows){
+    private void rowsWriter(Long2ObjectMap<ScoredIdAccumulator> rows) {
         try {
             File fileTwo = new File("etc/rows.tmp");
             FileOutputStream fos = new FileOutputStream(fileTwo);
             ObjectOutputStream pos = new ObjectOutputStream(fos);
-            for (Long2ObjectMap.Entry<ScoredIdAccumulator> e: rows.long2ObjectEntrySet()) {
+            for (Long2ObjectMap.Entry<ScoredIdAccumulator> e : rows.long2ObjectEntrySet()) {
                 pos.writeObject(e);
             }
             pos.writeObject(null);
             pos.close();
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace(System.err);
             System.exit(1);
         }
     }
 
-    private Long2ObjectMap<ScoredIdAccumulator> buildRows(LongSortedSet allItems, int i){
+    private Long2ObjectMap<ScoredIdAccumulator> buildRows(LongSortedSet allItems, int i) {
         Long2ObjectMap<ScoredIdAccumulator> rows = makeAccumulators(allItems);
         for (int k = 0; k < i; k++) {
             try {
-                File toRead = new File("etc/similarities"+k+".tmp");
+                File toRead = new File("etc/similarities" + k + ".tmp");
                 FileInputStream fis = new FileInputStream(toRead);
 
                 Scanner sc = new Scanner(fis);
@@ -243,114 +240,101 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
         }
         return rows;
     }
-}
 
-class SimilarityThread extends Thread {
-    private static volatile ItemSimilarity itemSimilarity;
-    private final LongIterator outer;
-    private static volatile ItemItemBuildContext buildContext;
-    private static volatile Threshold threshold;
-    private static volatile NeighborIterationStrategy neighborStrategy;
-    private static volatile int minCommonUsers;
-    private final int thread_index;
-    private final Object lock = new Object();
+    class SimilarityThread extends Thread {
+        private final LongIterator outer;
+        private final int thread_index;
+        private final Object lock = new Object();
+        public BufferedWriter bufferedWriter = null;
 
-    public SimilarityThread(LongIterator Outer, ItemSimilarity Similarity, int i,
-                    ItemItemBuildContext BuildContext, Threshold Threshold, NeighborIterationStrategy NeighborStrategy,
-                    int MinCommonUsers){
-        outer = Outer;
-        itemSimilarity = Similarity;
-        buildContext = BuildContext;
-        threshold = Threshold;
-        neighborStrategy = NeighborStrategy;
-        minCommonUsers = MinCommonUsers;
-        thread_index = i;
-    }
-
-    public void run() {
-
-        BufferedWriter bufferedWriter = null;
-        try {
-            File fileTwo = new File("etc/similarities"+thread_index+".tmp");
-            FileOutputStream fos = new FileOutputStream(fileTwo);
-            PrintWriter pw = new PrintWriter(fos);
-            bufferedWriter = new BufferedWriter(pw);
-        }catch(Exception e){
-            e.printStackTrace(System.err);
-            System.exit(1);
+        public SimilarityThread(LongIterator Outer, int i) {
+            outer = Outer;
+            thread_index = i;
         }
-        Stopwatch timer;
-        timer = Stopwatch.createStarted();
-        int inside_items = 0;
-        OUTER:
-        while (outer.hasNext()) {
-            final long itemId1 = outer.nextLong();
-            SparseVector vec1 = buildContext.itemVector(itemId1);
-            if (vec1.size() < minCommonUsers) {
-                // if it doesn't have enough users, it can't have enough common users
+
+        public void run() {
+
+            try {
+                File fileTwo = new File("etc/similarities" + thread_index + ".tmp");
+                FileOutputStream fos = new FileOutputStream(fileTwo);
+                PrintWriter pw = new PrintWriter(fos);
+                bufferedWriter = new BufferedWriter(pw);
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+                System.exit(1);
+            }
+            Stopwatch timer;
+            timer = Stopwatch.createStarted();
+            int inside_items = 0;
+            OUTER:
+            while (outer.hasNext()) {
+                final long itemId1 = outer.nextLong();
+                SparseVector vec1 = buildContext.itemVector(itemId1);
+                if (vec1.size() < minCommonUsers) {
+                    // if it doesn't have enough users, it can't have enough common users
+                    inside_items++;
+                    synchronized (lock) {
+                        ItemItemModelProvider.items_done++;
+                    }
+                    continue OUTER;
+                }
+
+                LongIterator itemIter = neighborStrategy.neighborIterator(buildContext, itemId1,
+                        itemSimilarity, threshold, bufferedWriter);
+
+                INNER:
+                while (itemIter.hasNext()) {
+                    long itemId2 = itemIter.nextLong();
+                    if (itemId1 != itemId2) {
+                        SparseVector vec2 = buildContext.itemVector(itemId2);
+                        if (!LongUtils.hasNCommonItems(vec1.keySet(), vec2.keySet(), minCommonUsers)) {
+                            // items have insufficient users in common, skip them
+                            continue INNER;
+                        }
+
+                        double sim = itemSimilarity.similarity(itemId1, vec1, itemId2, vec2);
+
+                        if (threshold.retain(sim)) {
+                            compute(itemId1, itemId2, sim);
+                        } else {
+                            neighborStrategy.recompute(itemId1, itemId2, vec1, sim);
+                        }
+                    }
+                }
                 inside_items++;
                 synchronized (lock) {
                     ItemItemModelProvider.items_done++;
                 }
-                continue OUTER;
             }
+            try {
+                timer.stop();
+                FileWriter writer = new FileWriter("etc/BasketRun.log", true);
+                BufferedWriter Writer = new BufferedWriter(writer);
+                Writer.write("Thread "
+                        + thread_index + " computed "
+                        + inside_items + " out of "
+                        + ItemItemModelProvider.nitems + " in "
+                        + timer + "\n");
+                Writer.flush();
+                bufferedWriter.close();
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+                System.exit(1);
+            }
+        }
 
-            LongIterator itemIter = neighborStrategy.neighborIterator(buildContext, itemId1,
-                    itemSimilarity.isSymmetric());
-
-            INNER:
-            while (itemIter.hasNext()) {
-                long itemId2 = itemIter.nextLong();
-                if (itemId1 != itemId2) {
-                    SparseVector vec2 = buildContext.itemVector(itemId2);
-                    if (!LongUtils.hasNCommonItems(vec1.keySet(), vec2.keySet(), minCommonUsers)) {
-                        // items have insufficient users in common, skip them
-                        continue INNER;
-                    }
-
-                    double sim = itemSimilarity.similarity(itemId1, vec1, itemId2, vec2);
-
-                    if (threshold.retain(sim)) {
-                        compute(bufferedWriter,itemId1,itemId2,sim);
-                    } else {
-                        neighborStrategy.recompute(bufferedWriter,itemId1,itemId2,
-                                vec1, buildContext, itemSimilarity,threshold,sim);
-                    }
+        private void compute(Long itemId1, Long itemId2, double sim) {
+            try {
+                bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim + "\n");
+                if (itemSimilarity.isSymmetric()) {
+                    bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim + "\n");
                 }
-            }
-            inside_items++;
-            synchronized (lock) {
-                ItemItemModelProvider.items_done++;
+            } catch (Exception e) {
+                System.err.println(e.toString());
+                e.printStackTrace(System.err);
+                System.exit(1);
             }
         }
-        try {
-            timer.stop();
-            FileWriter writer = new FileWriter("etc/BasketRun.log", true);
-            BufferedWriter Writer = new BufferedWriter(writer);
-            Writer.write("Thread "
-                    +thread_index+" computed "
-                    +inside_items+" out of "
-                    +ItemItemModelProvider.nitems+" in "
-                    +timer+"\n");
-            Writer.flush();
-            bufferedWriter.close();
-        } catch (Exception e){
-            e.printStackTrace(System.err);
-            System.exit(1);
-        }
-    }
 
-    private void compute(BufferedWriter bufferedWriter, Long itemId1, Long itemId2, double sim){
-        try {
-            bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim+"\n");
-            if (itemSimilarity.isSymmetric()) {
-                    bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
-            }
-        } catch (Exception e) {
-            System.err.println(e.toString());
-            e.printStackTrace(System.err);
-            System.exit(1);
-        }
     }
-
 }

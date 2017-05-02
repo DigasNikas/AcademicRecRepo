@@ -34,8 +34,14 @@ import java.io.BufferedWriter;
  * @author <a href="http://www.grouplens.org">GroupLens Research</a>
  */
 public class BasicNeighborIterationStrategy implements NeighborIterationStrategy {
+    private boolean onlyAfter;
+    private BufferedWriter bufferedWriter;
+
     @Override
-    public LongIterator neighborIterator(ItemItemBuildContext context, long item, boolean onlyAfter) {
+    public LongIterator neighborIterator(ItemItemBuildContext context, long item, ItemSimilarity itemSimilarity,
+                                         Threshold threshold, BufferedWriter bufferedWriter) {
+        this.onlyAfter = itemSimilarity.isSymmetric();
+        this.bufferedWriter = bufferedWriter;
         if (onlyAfter) {
             return context.getItems().iterator(item);
         } else {
@@ -43,11 +49,10 @@ public class BasicNeighborIterationStrategy implements NeighborIterationStrategy
         }
     }
     @Override
-    public void recompute(BufferedWriter bufferedWriter, Long itemId1, Long itemId2, SparseVector vec1,
-                          ItemItemBuildContext buildContext, ItemSimilarity itemSimilarity, Threshold threshold, double sim){
+    public void recompute(Long itemId1, Long itemId2, SparseVector vec1, double sim){
         try {
             bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim+"\n");
-            if (itemSimilarity.isSymmetric()) {
+            if (onlyAfter) {
                 bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
             }
         } catch (Exception e) {

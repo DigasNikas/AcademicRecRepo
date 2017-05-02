@@ -17,20 +17,24 @@ import java.util.*;
  * Created by diogo on 26-10-2016.
  */
 public class LeastPopularItemNeighborIterationStrategy implements NeighborIterationStrategy{
+    private boolean onlyAfter;
+    private BufferedWriter bufferedWriter;
 
     @Override
-    public LongIterator neighborIterator(ItemItemBuildContext context, long item, boolean onlyAfter) {
+    public LongIterator neighborIterator(ItemItemBuildContext context, long item, ItemSimilarity itemSimilarity,
+                                         Threshold threshold, BufferedWriter bufferedWriter) {
+        this.onlyAfter = itemSimilarity.isSymmetric();
+        this.bufferedWriter = bufferedWriter;
         Set<Long> key_set = itemsVectorSize(context).keySet();
         List<Long> list = Arrays.asList(key_set.toArray(new Long[200]));
         LongList items = LongUtils.asLongList(list);
         return items.iterator();
     }
     @Override
-    public void recompute(BufferedWriter bufferedWriter, Long itemId1, Long itemId2, SparseVector vec1,
-                          ItemItemBuildContext buildContext, ItemSimilarity itemSimilarity, Threshold threshold, double sim){
+    public void recompute(Long itemId1, Long itemId2, SparseVector vec1, double sim){
         try {
             bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim+"\n");
-            if (itemSimilarity.isSymmetric()) {
+            if (onlyAfter) {
                 bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
             }
         } catch (Exception e) {

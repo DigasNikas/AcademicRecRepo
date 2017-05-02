@@ -19,11 +19,21 @@ import java.util.Random;
  * Created by diogo on 23-10-2016.
  */
 public class RandomNeighborIterationStrategy implements NeighborIterationStrategy {
-
+    private boolean onlyAfter;
+    private BufferedWriter bufferedWriter;
     private List<Map.Entry<Long,Long>> used = new ArrayList<>();
+    private ItemItemBuildContext buildContext;
+    private Threshold threshold;
+    private ItemSimilarity itemSimilarity;
 
     @Override
-    public LongIterator neighborIterator(ItemItemBuildContext context, long item, boolean onlyAfter) {
+    public LongIterator neighborIterator(ItemItemBuildContext context, long item, ItemSimilarity itemSimilarity,
+                                         Threshold threshold, BufferedWriter bufferedWriter) {
+        this.onlyAfter = itemSimilarity.isSymmetric();
+        this.bufferedWriter = bufferedWriter;
+        this.buildContext = context;
+        this.threshold = threshold;
+        this.itemSimilarity = itemSimilarity;
         int number = 20;
         Random rnd = new Random();
         rnd.setSeed(item);
@@ -31,23 +41,21 @@ public class RandomNeighborIterationStrategy implements NeighborIterationStrateg
         return items.iterator();
     }
     @Override
-    public void recompute(BufferedWriter bufferedWriter, Long itemId1, Long item, SparseVector vec1,
-                          ItemItemBuildContext buildContext, ItemSimilarity itemSimilarity, Threshold threshold, double empty){
+    public void recompute(Long itemId1, Long itemId2, SparseVector vec1, double sim){
         Long iterationCount = 0L;
-        AGAIN:
         while(true) {
             iterationCount++;
-            Long itemId2 = generateNewRandom(item+iterationCount,buildContext);
+            itemId2 = generateNewRandom(itemId2+iterationCount);
             Map.Entry<Long,Long> pair = new java.util.AbstractMap.SimpleEntry<>(itemId1,itemId2);
             if (used.contains(pair))
-                continue AGAIN;
+                continue;
             SparseVector vec2 = buildContext.itemVector(itemId2);
-            double sim = itemSimilarity.similarity(itemId1, vec1, itemId2, vec2);
+            sim = itemSimilarity.similarity(itemId1, vec1, itemId2, vec2);
 
             if (threshold.retain(sim)) {
                 try {
                     bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim+"\n");
-                    if (itemSimilarity.isSymmetric()) {
+                    if (onlyAfter) {
                         bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
                     }
                 } catch (Exception e) {
@@ -56,16 +64,14 @@ public class RandomNeighborIterationStrategy implements NeighborIterationStrateg
                     System.exit(1);
                 }
                 return;
-            } else {
-                continue AGAIN;
             }
         }
     }
 
-    private Long generateNewRandom(Long item, ItemItemBuildContext context){
+    private Long generateNewRandom(Long item){
         Random rnd = new Random();
         rnd.setSeed(item);
-        LongSet item2 = LongUtils.randomSubset(context.getItems(),1, rnd);
+        LongSet item2 = LongUtils.randomSubset(buildContext.getItems(),1, rnd);
         return item2.iterator().nextLong();
     }
 

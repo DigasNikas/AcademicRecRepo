@@ -39,16 +39,9 @@ import java.io.BufferedWriter;
  */
 @DefaultProvider(DefaultNeighborIterationStrategyProvider.class)
 public interface NeighborIterationStrategy {
-    /**
-     * Get an iterator over possible neighbors of an item.
-     * @param context The build context (to get item &amp; neighbor information).
-     * @param item The item ID.  The item may or may not be included in the returned items.
-     * @param onlyAfter If {@code true}, only consider item IDs after {@code item}, because
-     *                  the caller only needs unique unordered pairs.
-     * @return An iterator over possible neighbors of {@code item}.
-     */
-    LongIterator neighborIterator(ItemItemBuildContext context, long item, boolean onlyAfter);
 
-    void recompute(BufferedWriter bufferedWriter, Long itemId1, Long itemId2, SparseVector vec1,
-                          ItemItemBuildContext buildContext, ItemSimilarity itemSimilarity, Threshold threshold, double sim);
+    LongIterator neighborIterator(ItemItemBuildContext context, long item, ItemSimilarity itemSimilarity,
+                                  Threshold threshold, BufferedWriter bufferedWriter);
+
+    void recompute(Long itemId1, Long itemId2, SparseVector vec1, double sim);
 }
