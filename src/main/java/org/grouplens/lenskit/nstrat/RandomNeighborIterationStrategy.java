@@ -45,15 +45,15 @@ public class RandomNeighborIterationStrategy implements NeighborIterationStrateg
             double sim = itemSimilarity.similarity(itemId1, vec1, itemId2, vec2);
 
             if (threshold.retain(sim)) {
-                if (itemSimilarity.isSymmetric()) {
-                    try {
+                try {
+                    bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim+"\n");
+                    if (itemSimilarity.isSymmetric()) {
                         bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
-                        used.add(pair);
-                    } catch (Exception e) {
-                        System.err.println(e.toString());
-                        e.printStackTrace(System.err);
-                        System.exit(1);
                     }
+                } catch (Exception e) {
+                    System.err.println(e.toString());
+                    e.printStackTrace(System.err);
+                    System.exit(1);
                 }
                 return;
             } else {

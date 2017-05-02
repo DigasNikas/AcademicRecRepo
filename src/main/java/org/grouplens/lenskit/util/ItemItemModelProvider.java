@@ -341,14 +341,15 @@ class SimilarityThread extends Thread {
     }
 
     private void compute(BufferedWriter bufferedWriter, Long itemId1, Long itemId2, double sim){
-        if (itemSimilarity.isSymmetric()) {
-            try {
-                bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
-            } catch (Exception e) {
-                System.err.println(e.toString());
-                e.printStackTrace(System.err);
-                System.exit(1);
+        try {
+            bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim+"\n");
+            if (itemSimilarity.isSymmetric()) {
+                    bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
             }
+        } catch (Exception e) {
+            System.err.println(e.toString());
+            e.printStackTrace(System.err);
+            System.exit(1);
         }
     }
 

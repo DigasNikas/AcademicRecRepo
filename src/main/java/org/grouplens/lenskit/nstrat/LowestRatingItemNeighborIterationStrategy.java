@@ -26,14 +26,15 @@ public class LowestRatingItemNeighborIterationStrategy implements NeighborIterat
     @Override
     public void recompute(BufferedWriter bufferedWriter, Long itemId1, Long itemId2, SparseVector vec1,
                           ItemItemBuildContext buildContext, ItemSimilarity itemSimilarity, Threshold threshold, double sim){
-        if (itemSimilarity.isSymmetric()) {
-            try {
+        try {
+            bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim+"\n");
+            if (itemSimilarity.isSymmetric()) {
                 bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
-            } catch (Exception e) {
-                System.err.println(e.toString());
-                e.printStackTrace(System.err);
-                System.exit(1);
             }
+        } catch (Exception e) {
+            System.err.println(e.toString());
+            e.printStackTrace(System.err);
+            System.exit(1);
         }
     }
 
