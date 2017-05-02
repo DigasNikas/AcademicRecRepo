@@ -19,7 +19,6 @@ import java.util.Random;
  * Created by diogo on 23-10-2016.
  */
 public class RandomNeighborIterationStrategy implements NeighborIterationStrategy {
-    private boolean onlyAfter;
     private BufferedWriter bufferedWriter;
     private List<Map.Entry<Long,Long>> used = new ArrayList<>();
     private ItemItemBuildContext buildContext;
@@ -29,7 +28,6 @@ public class RandomNeighborIterationStrategy implements NeighborIterationStrateg
     @Override
     public LongIterator neighborIterator(ItemItemBuildContext context, long item, ItemSimilarity itemSimilarity,
                                          Threshold threshold, BufferedWriter bufferedWriter) {
-        this.onlyAfter = itemSimilarity.isSymmetric();
         this.bufferedWriter = bufferedWriter;
         this.buildContext = context;
         this.threshold = threshold;
@@ -40,6 +38,21 @@ public class RandomNeighborIterationStrategy implements NeighborIterationStrateg
         LongSet items = LongUtils.randomSubset(context.getItems(),number, rnd);
         return items.iterator();
     }
+
+    @Override
+    public void compute(Long itemId1, Long itemId2, double sim) {
+        try {
+            bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim + "\n");
+            if (itemSimilarity.isSymmetric()) {
+                bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim + "\n");
+            }
+        } catch (Exception e) {
+            System.err.println(e.toString());
+            e.printStackTrace(System.err);
+            System.exit(1);
+        }
+    }
+
     @Override
     public void recompute(Long itemId1, Long itemId2, SparseVector vec1, double sim){
         Long iterationCount = 0L;
@@ -55,7 +68,7 @@ public class RandomNeighborIterationStrategy implements NeighborIterationStrateg
             if (threshold.retain(sim)) {
                 try {
                     bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim+"\n");
-                    if (onlyAfter) {
+                    if (itemSimilarity.isSymmetric()) {
                         bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
                     }
                 } catch (Exception e) {

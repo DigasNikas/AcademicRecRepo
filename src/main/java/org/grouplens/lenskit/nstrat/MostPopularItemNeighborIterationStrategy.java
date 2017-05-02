@@ -17,24 +17,39 @@ import java.util.*;
  * Created by diogo on 26-10-2016.
  */
 public class MostPopularItemNeighborIterationStrategy implements NeighborIterationStrategy{
-    private boolean onlyAfter;
+    private ItemSimilarity itemSimilarity;
     private BufferedWriter bufferedWriter;
 
     @Override
     public LongIterator neighborIterator(ItemItemBuildContext context, long item, ItemSimilarity itemSimilarity,
                                          Threshold threshold, BufferedWriter bufferedWriter) {
-        this.onlyAfter = itemSimilarity.isSymmetric();
         this.bufferedWriter = bufferedWriter;
+        this.itemSimilarity = itemSimilarity;
         Set<Long> key_set = itemsVectorSize(context).keySet();
         List<Long> list = Arrays.asList(key_set.toArray(new Long[200]));
         LongList items = LongUtils.asLongList(list);
         return items.iterator();
     }
+
+    @Override
+    public void compute(Long itemId1, Long itemId2, double sim) {
+        try {
+            bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim + "\n");
+            if (itemSimilarity.isSymmetric()) {
+                bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim + "\n");
+            }
+        } catch (Exception e) {
+            System.err.println(e.toString());
+            e.printStackTrace(System.err);
+            System.exit(1);
+        }
+    }
+
     @Override
     public void recompute(Long itemId1, Long itemId2, SparseVector vec1, double sim){
         try {
             bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim+"\n");
-            if (onlyAfter) {
+            if (itemSimilarity.isSymmetric()) {
                 bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
             }
         } catch (Exception e) {

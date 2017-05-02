@@ -35,22 +35,37 @@ import java.io.BufferedWriter;
  * @author <a href="http://www.grouplens.org">GroupLens Research</a>
  */
 public class SparseNeighborIterationStrategy implements NeighborIterationStrategy {
-    private boolean onlyAfter;
     private BufferedWriter bufferedWriter;
+    private ItemSimilarity itemSimilarity;
 
     @Override
-    public LongIterator neighborIterator(ItemItemBuildContext context, long item, boolean onlyAfter,
+    public LongIterator neighborIterator(ItemItemBuildContext context, long item, ItemSimilarity itemSimilarity,
                                          Threshold threshold, BufferedWriter bufferedWriter) {
-        this.onlyAfter = onlyAfter;
         this.bufferedWriter = bufferedWriter;
-        long lowerBound = onlyAfter ? item : Long.MIN_VALUE;
+        this.itemSimilarity = itemSimilarity;
+        long lowerBound = itemSimilarity.isSymmetric() ? item : Long.MIN_VALUE;
         return new AdaptiveSparseItemIterator(context, context.itemVector(item).keySet(), lowerBound);
     }
+
+    @Override
+    public void compute(Long itemId1, Long itemId2, double sim) {
+        try {
+            bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim + "\n");
+            if (itemSimilarity.isSymmetric()) {
+                bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim + "\n");
+            }
+        } catch (Exception e) {
+            System.err.println(e.toString());
+            e.printStackTrace(System.err);
+            System.exit(1);
+        }
+    }
+
     @Override
     public void recompute(Long itemId1, Long itemId2, SparseVector vec1, double sim){
         try {
             bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim+"\n");
-            if (onlyAfter) {
+            if (itemSimilarity.isSymmetric()) {
                 bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
             }
         } catch (Exception e) {

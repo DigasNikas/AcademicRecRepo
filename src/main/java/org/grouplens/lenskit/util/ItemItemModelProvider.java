@@ -295,7 +295,7 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
                         double sim = itemSimilarity.similarity(itemId1, vec1, itemId2, vec2);
 
                         if (threshold.retain(sim)) {
-                            compute(itemId1, itemId2, sim);
+                            neighborStrategy.compute(itemId1, itemId2, sim);
                         } else {
                             neighborStrategy.recompute(itemId1, itemId2, vec1, sim);
                         }
@@ -322,19 +322,5 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
                 System.exit(1);
             }
         }
-
-        private void compute(Long itemId1, Long itemId2, double sim) {
-            try {
-                bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim + "\n");
-                if (itemSimilarity.isSymmetric()) {
-                    bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim + "\n");
-                }
-            } catch (Exception e) {
-                System.err.println(e.toString());
-                e.printStackTrace(System.err);
-                System.exit(1);
-            }
-        }
-
     }
 }
