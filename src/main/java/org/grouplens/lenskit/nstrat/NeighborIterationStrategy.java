@@ -41,8 +41,6 @@ import java.io.BufferedWriter;
 public interface NeighborIterationStrategy {
 
     LongIterator neighborIterator(ItemItemBuildContext context, long item, ItemSimilarity itemSimilarity,
-                                  Threshold threshold, BufferedWriter bufferedWriter);
-
+                                         Threshold threshold, BufferedWriter bufferedWriter);
     void compute(Long itemId1, Long itemId2, double sim);
-    void recompute(Long itemId1, Long itemId2, SparseVector vec1, double sim);
 }

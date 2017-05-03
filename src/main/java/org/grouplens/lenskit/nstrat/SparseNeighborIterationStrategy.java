@@ -37,12 +37,14 @@ import java.io.BufferedWriter;
 public class SparseNeighborIterationStrategy implements NeighborIterationStrategy {
     private BufferedWriter bufferedWriter;
     private ItemSimilarity itemSimilarity;
+    private Threshold threshold;
 
     @Override
     public LongIterator neighborIterator(ItemItemBuildContext context, long item, ItemSimilarity itemSimilarity,
                                          Threshold threshold, BufferedWriter bufferedWriter) {
         this.bufferedWriter = bufferedWriter;
         this.itemSimilarity = itemSimilarity;
+        this.threshold = threshold;
         long lowerBound = itemSimilarity.isSymmetric() ? item : Long.MIN_VALUE;
         return new AdaptiveSparseItemIterator(context, context.itemVector(item).keySet(), lowerBound);
     }
@@ -60,19 +62,5 @@ public class SparseNeighborIterationStrategy implements NeighborIterationStrateg
             System.exit(1);
         }
     }
-
-    @Override
-    public void recompute(Long itemId1, Long itemId2, SparseVector vec1, double sim){
-        try {
-            bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim+"\n");
-            if (itemSimilarity.isSymmetric()) {
-                bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
-            }
-        } catch (Exception e) {
-            System.err.println(e.toString());
-            e.printStackTrace(System.err);
-            System.exit(1);
-        }
-    }
-
+    // might be needed to recompute, if sim < threshold
 }

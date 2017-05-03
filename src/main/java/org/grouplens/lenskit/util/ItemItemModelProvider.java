@@ -24,8 +24,6 @@ import com.google.common.base.Stopwatch;
 import it.unimi.dsi.fastutil.longs.*;
 import org.grouplens.lenskit.transform.threshold.Threshold;
 import org.lenskit.util.ScoredIdAccumulator;
-import org.lenskit.util.TopNScoredIdAccumulator;
-import org.lenskit.util.UnlimitedScoredIdAccumulator;
 import org.grouplens.lenskit.vectors.SparseVector;
 import org.lenskit.inject.Transient;
 import org.lenskit.knn.item.ItemSimilarity;
@@ -41,9 +39,10 @@ import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import java.io.*;
-import java.text.DecimalFormat;
-import java.util.Scanner;
-import java.util.StringTokenizer;
+
+import static org.grouplens.lenskit.util.ItemItemModelProviderAdjutant.buildRows;
+import static org.grouplens.lenskit.util.ItemItemModelProviderAdjutant.finishRows;
+import static org.grouplens.lenskit.util.ItemItemModelProviderAdjutant.rowsWriter;
 
 /**
  * Build an item-item CF model from rating data.
@@ -62,8 +61,8 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
     private final NeighborIterationStrategy neighborStrategy;
     private final int minCommonUsers;
     private final int modelSize;
-    public static volatile int items_done;
-    public static volatile int nitems;
+    private static volatile int items_done;
+    private static volatile int nitems;
 
     @Inject
     public ItemItemModelProvider(@Transient ItemSimilarity similarity,
@@ -148,7 +147,7 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
         Stopwatch timerX;
         timerX = Stopwatch.createStarted();
 
-        Long2ObjectMap<ScoredIdAccumulator> rows = buildRows(allItems, n_threads);
+        Long2ObjectMap<ScoredIdAccumulator> rows = buildRows(allItems, n_threads, modelSize);
         timerX.stop();
         logger.info("built object in {}", timerX);
 
@@ -165,86 +164,9 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
         return new SimilarityMatrixModel(finishRows(rows2));
     }
 
-    private Long2ObjectMap<ScoredIdAccumulator> makeAccumulators(LongSet items) {
-        Long2ObjectMap<ScoredIdAccumulator> rows = new Long2ObjectOpenHashMap<>(items.size());
-        LongIterator iter = items.iterator();
-        while (iter.hasNext()) {
-            long item = iter.nextLong();
-            ScoredIdAccumulator accum;
-            if (modelSize == 0) {
-                accum = new UnlimitedScoredIdAccumulator();
-            } else {
-                accum = new TopNScoredIdAccumulator(modelSize);
-            }
-            rows.put(item, accum);
-        }
-        return rows;
-    }
-
-    private Long2ObjectMap<Long2DoubleMap> finishRows(Long2ObjectMap<Long2DoubleMap> results) {
-        File toRead = null;
-        try {
-            toRead = new File("etc/rows.tmp");
-            FileInputStream fis = new FileInputStream(toRead);
-
-            ObjectInputStream input = new ObjectInputStream(fis);
-
-            while (true) {
-                Object obj = input.readObject();
-                Long2ObjectMap.Entry<ScoredIdAccumulator> e = (Long2ObjectMap.Entry<ScoredIdAccumulator>) obj;
-                results.put(e.getLongKey(), e.getValue().finishMap());
-            }
-        } catch (Exception e) {/* DO NOTHING JON SNOW */}
-        toRead.delete();
-        return results;
-    }
-
-    private void rowsWriter(Long2ObjectMap<ScoredIdAccumulator> rows) {
-        try {
-            File fileTwo = new File("etc/rows.tmp");
-            FileOutputStream fos = new FileOutputStream(fileTwo);
-            ObjectOutputStream pos = new ObjectOutputStream(fos);
-            for (Long2ObjectMap.Entry<ScoredIdAccumulator> e : rows.long2ObjectEntrySet()) {
-                pos.writeObject(e);
-            }
-            pos.writeObject(null);
-            pos.close();
-        } catch (Exception e) {
-            e.printStackTrace(System.err);
-            System.exit(1);
-        }
-    }
-
-    private Long2ObjectMap<ScoredIdAccumulator> buildRows(LongSortedSet allItems, int i) {
-        Long2ObjectMap<ScoredIdAccumulator> rows = makeAccumulators(allItems);
-        for (int k = 0; k < i; k++) {
-            try {
-                File toRead = new File("etc/similarities" + k + ".tmp");
-                FileInputStream fis = new FileInputStream(toRead);
-
-                Scanner sc = new Scanner(fis);
-
-                String currentLine;
-                while (sc.hasNextLine()) {
-                    currentLine = sc.nextLine();
-                    StringTokenizer st = new StringTokenizer(currentLine, ",", false);
-                    rows.get(Long.valueOf(st.nextToken())).put(Long.valueOf(st.nextToken()), Double.valueOf(st.nextToken()));
-                }
-
-                fis.close();
-                toRead.delete();
-            } catch (Exception e) {
-                e.printStackTrace(System.err);
-                System.exit(1);
-            }
-        }
-        return rows;
-    }
-
     class SimilarityThread extends Thread {
         private final LongIterator outer;
         private final int thread_index;
-        private final Object lock = new Object();
         public BufferedWriter bufferedWriter = null;
 
         public SimilarityThread(LongIterator Outer, int i) {
@@ -266,45 +188,33 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
             Stopwatch timer;
             timer = Stopwatch.createStarted();
             int inside_items = 0;
-            OUTER:
+
             while (outer.hasNext()) {
                 final long itemId1 = outer.nextLong();
                 SparseVector vec1 = buildContext.itemVector(itemId1);
                 if (vec1.size() < minCommonUsers) {
                     // if it doesn't have enough users, it can't have enough common users
                     inside_items++;
-                    synchronized (lock) {
-                        ItemItemModelProvider.items_done++;
-                    }
-                    continue OUTER;
+                    continue;
                 }
 
                 LongIterator itemIter = neighborStrategy.neighborIterator(buildContext, itemId1,
                         itemSimilarity, threshold, bufferedWriter);
 
-                INNER:
                 while (itemIter.hasNext()) {
                     long itemId2 = itemIter.nextLong();
                     if (itemId1 != itemId2) {
                         SparseVector vec2 = buildContext.itemVector(itemId2);
                         if (!LongUtils.hasNCommonItems(vec1.keySet(), vec2.keySet(), minCommonUsers)) {
                             // items have insufficient users in common, skip them
-                            continue INNER;
+                            continue;
                         }
 
                         double sim = itemSimilarity.similarity(itemId1, vec1, itemId2, vec2);
-
-                        if (threshold.retain(sim)) {
-                            neighborStrategy.compute(itemId1, itemId2, sim);
-                        } else {
-                            neighborStrategy.recompute(itemId1, itemId2, vec1, sim);
-                        }
+                        neighborStrategy.compute(itemId1, itemId2, sim);
                     }
                 }
                 inside_items++;
-                synchronized (lock) {
-                    ItemItemModelProvider.items_done++;
-                }
             }
             try {
                 timer.stop();
@@ -313,7 +223,7 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
                 Writer.write("Thread "
                         + thread_index + " computed "
                         + inside_items + " out of "
-                        + ItemItemModelProvider.nitems + " in "
+                        + nitems + " in "
                         + timer + "\n");
                 Writer.flush();
                 bufferedWriter.close();

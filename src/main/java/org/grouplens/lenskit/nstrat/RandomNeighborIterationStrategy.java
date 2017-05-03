@@ -41,29 +41,32 @@ public class RandomNeighborIterationStrategy implements NeighborIterationStrateg
 
     @Override
     public void compute(Long itemId1, Long itemId2, double sim) {
-        try {
-            bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim + "\n");
-            if (itemSimilarity.isSymmetric()) {
-                bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim + "\n");
+        if(threshold.retain(sim)) {
+            try {
+                bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim + "\n");
+                if (itemSimilarity.isSymmetric()) {
+                    bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim + "\n");
+                }
+            } catch (Exception e) {
+                System.err.println(e.toString());
+                e.printStackTrace(System.err);
+                System.exit(1);
             }
-        } catch (Exception e) {
-            System.err.println(e.toString());
-            e.printStackTrace(System.err);
-            System.exit(1);
         }
+        else recompute(itemId1, itemId2);
     }
 
-    @Override
-    public void recompute(Long itemId1, Long itemId2, SparseVector vec1, double sim){
+    private void recompute(Long itemId1, Long itemId2Previous){
+        SparseVector vec1 = buildContext.itemVector(itemId1);
         Long iterationCount = 0L;
         while(true) {
             iterationCount++;
-            itemId2 = generateNewRandom(itemId2+iterationCount);
+            long itemId2 = generateNewRandom(itemId2Previous+iterationCount);
             Map.Entry<Long,Long> pair = new java.util.AbstractMap.SimpleEntry<>(itemId1,itemId2);
             if (used.contains(pair))
                 continue;
             SparseVector vec2 = buildContext.itemVector(itemId2);
-            sim = itemSimilarity.similarity(itemId1, vec1, itemId2, vec2);
+            double sim = itemSimilarity.similarity(itemId1, vec1, itemId2, vec2);
 
             if (threshold.retain(sim)) {
                 try {
