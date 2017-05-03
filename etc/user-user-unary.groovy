@@ -1,6 +1,6 @@
-import org.lenskit.transform.normalize.MeanCenteringVectorNormalizer
-import org.lenskit.transform.normalize.UserVectorNormalizer
-import org.lenskit.transform.normalize.VectorNormalizer
+import org.grouplens.lenskit.transform.normalize.UnitVectorNormalizer
+import org.grouplens.lenskit.transform.normalize.UserVectorNormalizer
+import org.grouplens.lenskit.transform.normalize.VectorNormalizer
 import org.lenskit.api.ItemScorer
 import org.lenskit.baseline.BaselineScorer
 import org.lenskit.baseline.ItemMeanRatingItemScorer
@@ -8,7 +8,11 @@ import org.lenskit.baseline.UserMeanBaseline
 import org.lenskit.baseline.UserMeanItemScorer
 import org.lenskit.knn.NeighborhoodSize
 import org.lenskit.knn.user.UserUserItemScorer
+import org.lenskit.knn.item.SimilaritySumNeighborhoodScorer
+import org.lenskit.knn.item.NeighborhoodScorer
+import org.lenskit.knn.MinNeighbors
 
+set MinNeighbors to 2
 // ... and configure the item scorer.  The bind and set methods
 // are what you use to do that. Here, we want an item-item scorer.
 bind ItemScorer to UserUserItemScorer
@@ -21,7 +25,10 @@ bind (BaselineScorer, ItemScorer) to UserMeanItemScorer
 bind (UserMeanBaseline, ItemScorer) to ItemMeanRatingItemScorer
 
 within (UserVectorNormalizer) {
-    // for normalization, just center on user means
-  bind VectorNormalizer to MeanCenteringVectorNormalizer
+  bind VectorNormalizer to UnitVectorNormalizer
 }
 set NeighborhoodSize to 30
+
+// Neighborhood scorer that computes the sum of neighborhood similarities.
+// We don't want the Weighted Average
+bind NeighborhoodScorer to SimilaritySumNeighborhoodScorer

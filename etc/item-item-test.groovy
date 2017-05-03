@@ -1,7 +1,7 @@
-//import org.grouplens.lenskit.transform.normalize.BaselineSubtractingUserVectorNormalizer
-//import org.grouplens.lenskit.transform.normalize.UserVectorNormalizer
-import org.lenskit.transform.normalize.BaselineSubtractingUserVectorNormalizer
-import org.lenskit.transform.normalize.UserVectorNormalizer
+import org.grouplens.lenskit.transform.normalize.BaselineSubtractingUserVectorNormalizer
+import org.grouplens.lenskit.transform.normalize.UserVectorNormalizer
+//import org.lenskit.transform.normalize.BaselineSubtractingUserVectorNormalizer
+//import org.lenskit.transform.normalize.UserVectorNormalizer
 import org.lenskit.api.ItemScorer
 import org.lenskit.baseline.BaselineScorer
 import org.lenskit.baseline.ItemMeanRatingItemScorer
