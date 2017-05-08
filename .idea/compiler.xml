@@ -19,8 +19,8 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="AcademicRecRepo_main" target="1.7" />
-      <module name="AcademicRecRepo_test" target="1.7" />
+      <module name="AcademicRecRepo_main" target="1.8" />
+      <module name="AcademicRecRepo_test" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>

@@ -17,6 +17,7 @@ buildscript {
 
 apply plugin: 'java' // if you use Groovy or Scala, add those plugins
 apply plugin: 'lenskit'
+apply plugin: 'idea'
 
 /* Set up the repositories for getting LensKit and other libraries.
  * These repositories are used for your Java or Groovy code, and for running LensKit.
@@ -26,6 +27,7 @@ repositories {
         url 'https://oss.sonatype.org/content/repositories/snapshots/'
     }
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
@@ -34,7 +36,8 @@ dependencies {
     // To run the code, we also need the LensKit CLI.
     runtime "org.lenskit:lenskit-cli:3.0-M2"
     // Rival for evaluating
-    compile "net.recommenders.rival:rival-package:0.2"
+    compile "net.recommenders.rival:rival-package:0.3-SNAPSHOT"
+    compile "net.recommenders.rival:rival-examples:0.3-SNAPSHOT"
     // Tests use JUnit
     testCompile "junit:junit:4.12"
 }

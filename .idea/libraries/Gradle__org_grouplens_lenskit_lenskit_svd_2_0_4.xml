@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: org.grouplens.lenskit:lenskit-svd:2.0.4">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.grouplens.lenskit/lenskit-svd/2.0.4/b2cab83175f6af5fb65d8976ee7a3fe8089045b9/lenskit-svd-2.0.4.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.grouplens.lenskit/lenskit-svd/2.0.4/62201e0c58454afafa73d77f60a3d2b31e0ef2c/lenskit-svd-2.0.4-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
