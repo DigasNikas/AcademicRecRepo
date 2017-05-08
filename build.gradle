@@ -33,7 +33,8 @@ dependencies {
     compile "org.lenskit:lenskit-all:3.0-M2"
     // To run the code, we also need the LensKit CLI.
     runtime "org.lenskit:lenskit-cli:3.0-M2"
-
+    // Rival for evaluating
+    compile "net.recommenders.rival:rival-package:0.2"
     // Tests use JUnit
     testCompile "junit:junit:4.12"
 }
