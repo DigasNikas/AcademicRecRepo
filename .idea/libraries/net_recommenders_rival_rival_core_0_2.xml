@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="net.recommenders.rival:rival-core:0.2" type="repository">
+    <properties maven-id="net.recommenders.rival:rival-core:0.2" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/net/recommenders/rival/rival-core/0.2/rival-core-0.2.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/apache/commons/commons-csv/1.0/commons-csv-1.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
