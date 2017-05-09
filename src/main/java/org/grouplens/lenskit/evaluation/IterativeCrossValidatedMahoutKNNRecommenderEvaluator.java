@@ -13,11 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.grouplens.lenskit.evaluation;
+package net.recommenders.rival.examples.movielens100k;
 
-import com.google.common.base.Throwables;
-import it.unimi.dsi.fastutil.longs.LongIterator;
-import it.unimi.dsi.fastutil.longs.LongSet;
 import net.recommenders.rival.core.DataModelIF;
 import net.recommenders.rival.core.DataModelUtils;
 import net.recommenders.rival.core.Parser;
@@ -25,28 +22,27 @@ import net.recommenders.rival.core.SimpleParser;
 import net.recommenders.rival.evaluation.metric.ranking.NDCG;
 import net.recommenders.rival.evaluation.metric.ranking.Precision;
 import net.recommenders.rival.evaluation.strategy.EvaluationStrategy;
+import net.recommenders.rival.examples.DataDownloader;
+import net.recommenders.rival.recommend.frameworks.RecommenderIO;
+import net.recommenders.rival.recommend.frameworks.mahout.GenericRecommenderBuilder;
+import net.recommenders.rival.recommend.frameworks.exceptions.RecommenderException;
 import net.recommenders.rival.split.parser.MovielensParser;
 import net.recommenders.rival.split.splitter.IterativeCrossValidationSplitter;
+
+import org.apache.mahout.cf.taste.common.TasteException;
+import org.apache.mahout.cf.taste.impl.common.LongPrimitiveIterator;
+import org.apache.mahout.cf.taste.impl.model.file.FileDataModel;
+import org.apache.mahout.cf.taste.recommender.RecommendedItem;
+import org.apache.mahout.cf.taste.recommender.Recommender;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Paths;
-
+import java.util.List;
 import net.recommenders.rival.core.DataModelFactory;
 import net.recommenders.rival.evaluation.metric.error.RMSE;
-import org.grouplens.lenskit.hello.HelloLenskit;
-import org.grouplens.lenskit.hello.QueryRecommender;
-import org.grouplens.lenskit.hello.TrainRecommender;
-import org.grouplens.lenskit.util.ConfigReader;
-import org.grouplens.lenskit.util.HeapMemoryPrinter;
-import org.lenskit.data.dao.DataAccessObject;
-import org.lenskit.data.dao.file.StaticDataSource;
-import org.lenskit.data.entities.CommonTypes;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * RiVal Movielens100k Mahout Example, using 5-fold  iterative cross-validation.
@@ -58,13 +54,17 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="https://github.com/afcarvalho1991">André Carvalho</a>
  */
-public final class IterativeCrossValidation
+public final class IterativeCrossValidatedMahoutKNNRecommenderEvaluator
 {
 
     /**
      * Default number of folds.
      */
     public static final int N_FOLDS = 5;
+    /**
+     * Default neighbohood size.
+     */
+    public static final int NEIGH_SIZE = 50;
     /**
      * Default cutoff for evaluation metrics.
      */
@@ -78,11 +78,10 @@ public final class IterativeCrossValidation
      */
     public static final long SEED = 2048L;
 
-    private static final Logger logger = LoggerFactory.getLogger(HelloLenskit.class);
     /**
      * Utility classes should not have a public or default constructor.
      */
-    private IterativeCrossValidation() {
+    private IterativeCrossValidatedMahoutKNNRecommenderEvaluator() {
     }
 
     /**
@@ -91,14 +90,14 @@ public final class IterativeCrossValidation
      * @param args the arguments (not used)
      */
     public static void main(final String[] args) {
+        String url = "http://files.grouplens.org/datasets/movielens/ml-100k.zip";
+        String folder = "data/ml-100k";
         String modelPath = "data/ml-100k/model/";
         String recPath = "data/ml-100k/recommendations/";
-        String dataFile = "data/myData/rivalu.data";
+        String dataFile = "data/ml-100k/ml-100k/u.data";
         int nFolds = N_FOLDS;
-        logger.info("reading config file");
-        ConfigReader config_reader = new ConfigReader(args[0]);
-        prepareSplits(nFolds, dataFile, modelPath);
-        recommend(nFolds, modelPath, recPath, config_reader);
+        prepareSplits(url, nFolds, dataFile, folder, modelPath);
+        recommend(nFolds, modelPath, recPath);
         // the strategy files are (currently) being ignored
         prepareStrategy(nFolds, modelPath, recPath, modelPath);
         evaluate(nFolds, modelPath, recPath);
@@ -107,11 +106,15 @@ public final class IterativeCrossValidation
     /**
      * Downloads a dataset and stores the splits generated from it.
      *
+     * @param url url where dataset can be downloaded from
      * @param nFolds number of folds
      * @param inFile file to be used once the dataset has been downloaded
+     * @param folder folder where dataset will be stored
      * @param outPath path where the splits will be stored
      */
-    public static void prepareSplits(final int nFolds, final String inFile, final String outPath) {
+    public static void prepareSplits(final String url, final int nFolds, final String inFile, final String folder, final String outPath) {
+        DataDownloader dd = new DataDownloader(url, folder);
+        dd.downloadAndUnzip();
 
         boolean perUser = true;
         long seed = SEED;
@@ -129,6 +132,7 @@ public final class IterativeCrossValidation
         if (!dir.exists()) {
             if (!dir.mkdir()) {
                 System.err.println("Directory " + dir + " could not be created");
+                return;
             }
         }
 
@@ -141,41 +145,45 @@ public final class IterativeCrossValidation
      * @param inPath path where training and test models have been stored
      * @param outPath path where recommendation files will be stored
      */
-    public static void recommend(final int nFolds, final String inPath, final String outPath, final ConfigReader config_reader) {
+    public static void recommend(final int nFolds, final String inPath, final String outPath) {
         for (int i = 0; i < nFolds; i++) {
-            DataAccessObject dao_train;
-            DataAccessObject dao_test;
+            org.apache.mahout.cf.taste.model.DataModel trainModel;
+            org.apache.mahout.cf.taste.model.DataModel testModel;
             try {
-                StaticDataSource train_data = StaticDataSource.load(Paths.get(inPath + "train_" + i + ".csv"));
-                StaticDataSource test_data = StaticDataSource.load(Paths.get(inPath + "train_" + i + ".csv"));
-                // get the data from the DAO
-                dao_train = train_data.get();
-                dao_test = test_data.get();
+                trainModel = new FileDataModel(new File(inPath + "train_" + i + ".csv"));
+                testModel = new FileDataModel(new File(inPath + "test_" + i + ".csv"));
             } catch (IOException e) {
-                throw Throwables.propagate(e);
+                e.printStackTrace();
+                return;
             }
 
-            TrainRecommender recommender = new TrainRecommender(config_reader,dao_train,logger,new HeapMemoryPrinter(config_reader.getLogFile()));
-            recommender.train();
+            GenericRecommenderBuilder grb = new GenericRecommenderBuilder();
+            String recommenderClass = "org.apache.mahout.cf.taste.impl.recommender.GenericUserBasedRecommender";
+            String similarityClass = "org.apache.mahout.cf.taste.impl.similarity.PearsonCorrelationSimilarity";
+            int neighborhoodSize = NEIGH_SIZE;
+            Recommender recommender = null;
+            try {
+                recommender = grb.buildRecommender(trainModel, recommenderClass, similarityClass, neighborhoodSize);
+            } catch (RecommenderException e) {
+                e.printStackTrace();
+            }
 
             String fileName = "recs_" + i + ".csv";
 
-            LongSet users = dao_test.getEntityIds(CommonTypes.USER);
+            LongPrimitiveIterator users;
             try {
-                LongIterator users_iterator = users.iterator();
+                users = testModel.getUserIDs();
                 boolean createFile = true;
-                while (users_iterator.hasNext()) {
-                    long u = users_iterator.nextLong();
+                while (users.hasNext()) {
+                    long u = users.nextLong();
                     assert recommender != null;
-                    QueryRecommender query = new QueryRecommender(config_reader,dao_test,logger,new HeapMemoryPrinter(config_reader.getLogFile()));
-                    query.query();
-                    dao_train.getEntityIds(CommonTypes.RATING).size();
-                    //List<RecommendedItem> items = recommender.recommend(u, trainModel.getNumItems());
-                    //RecommenderIO.writeData(u, items, outPath, fileName, !createFile, null);
+                    int test = trainModel.getNumItems();
+                    List<RecommendedItem> items = recommender.recommend(u, trainModel.getNumItems());
+                    RecommenderIO.writeData(u, items, outPath, fileName, !createFile, null);
                     createFile = false;
                 }
-            } catch (Exception e) { //TasteException e) {
-                //e.printStackTrace();
+            } catch (TasteException e) {
+                e.printStackTrace();
             }
         }
     }

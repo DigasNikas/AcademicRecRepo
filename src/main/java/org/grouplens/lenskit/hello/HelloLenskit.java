@@ -67,7 +67,7 @@ public class HelloLenskit implements Runnable{
 
     public HelloLenskit(String ModeInput, String ConfigInput) {
         this.mode = ModeInput;
-        this.logger.info("reading config file");
+        logger.info("reading config file");
         this.config_reader = new ConfigReader(ConfigInput);
         config_reader.readConfigFile();
         this.dataFile = Paths.get(config_reader.getDataFile());
