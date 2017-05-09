@@ -106,7 +106,7 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
         logger.info("Building {} SimilarityThreads", n_threads);
         for (int i = 0; i < n_threads; i++) {
 
-            double items_by = nitems / ((double) n_threads * (double) (n_threads - (i + 1)) * (double) ((n_threads - (i + 1)) * (n_threads - (i + 1))));
+            double items_by = nitems / ((double) n_threads);
             int items_by_thread = (int) items_by;
 
             if (i < n_threads - 1) {
@@ -226,7 +226,8 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
                         + nitems + " in "
                         + timer + "\n");
                 Writer.flush();
-                bufferedWriter.close();
+                bufferedWriter.flush();
+                //bufferedWriter.close();
             } catch (Exception e) {
                 e.printStackTrace(System.err);
                 System.exit(1);

@@ -25,26 +25,33 @@ import net.recommenders.rival.core.SimpleParser;
 import net.recommenders.rival.evaluation.metric.ranking.NDCG;
 import net.recommenders.rival.evaluation.metric.ranking.Precision;
 import net.recommenders.rival.evaluation.strategy.EvaluationStrategy;
+import net.recommenders.rival.recommend.frameworks.RecommenderIO;
 import net.recommenders.rival.split.parser.MovielensParser;
 import net.recommenders.rival.split.splitter.IterativeCrossValidationSplitter;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Paths;
+import java.util.List;
 
 import net.recommenders.rival.core.DataModelFactory;
 import net.recommenders.rival.evaluation.metric.error.RMSE;
+import org.apache.mahout.cf.taste.recommender.RecommendedItem;
 import org.grouplens.lenskit.hello.HelloLenskit;
 import org.grouplens.lenskit.hello.QueryRecommender;
 import org.grouplens.lenskit.hello.TrainRecommender;
 import org.grouplens.lenskit.util.ConfigReader;
 import org.grouplens.lenskit.util.HeapMemoryPrinter;
+import org.lenskit.LenskitRecommender;
+import org.lenskit.LenskitRecommenderEngine;
+import org.lenskit.LenskitRecommenderEngineLoader;
+import org.lenskit.api.ItemRecommender;
+import org.lenskit.api.ResultList;
 import org.lenskit.data.dao.DataAccessObject;
 import org.lenskit.data.dao.file.StaticDataSource;
+import org.lenskit.data.entities.CommonAttributes;
 import org.lenskit.data.entities.CommonTypes;
+import org.lenskit.data.ratings.Rating;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +85,7 @@ public final class IterativeCrossValidation
      */
     public static final long SEED = 2048L;
 
-    private static final Logger logger = LoggerFactory.getLogger(HelloLenskit.class);
+    private static final Logger logger = LoggerFactory.getLogger(IterativeCrossValidation.class);
 
     /**
      * Utility classes should not have a public or default constructor.
@@ -164,15 +171,29 @@ public final class IterativeCrossValidation
             String fileName = "recs_" + i + ".csv";
 
             LongSet users = dao_test.getEntityIds(CommonTypes.USER);
+
             try {
                 LongIterator users_iterator = users.iterator();
                 boolean createFile = true;
+                File modelFile = new File(config_reader.getModelFile());
+                logger.info("loading recommender from {}", modelFile);
+                Object input = new FileInputStream(modelFile);
+
+                LenskitRecommenderEngineLoader loader = LenskitRecommenderEngine.newLoader();
+                LenskitRecommenderEngine engine = loader.load((InputStream) input);
+                LenskitRecommender rec = engine.createRecommender(dao_test);
+                ItemRecommender irec = rec.getItemRecommender();
+
                 while (users_iterator.hasNext()) {
                     long u = users_iterator.nextLong();
                     assert recommender != null;
-                    QueryRecommender query = new QueryRecommender(config_reader,dao_test,logger,new HeapMemoryPrinter(config_reader.getLogFile()));
-                    query.query();
-                    dao_train.getEntityIds(CommonTypes.RATING).size();
+
+                    int size = dao_train.query(CommonTypes.ITEM).get().size();
+                    ResultList recs = irec.recommendWithDetails(u, size, null, null);
+                    RecommenderIO.writeData(u, recs, outPath, fileName, !createFile, null);
+
+                    //dao_train.getEntityIds(CommonTypes.RATING).size()
+
                     //List<RecommendedItem> items = recommender.recommend(u, trainModel.getNumItems());
                     //RecommenderIO.writeData(u, items, outPath, fileName, !createFile, null);
                     createFile = false;

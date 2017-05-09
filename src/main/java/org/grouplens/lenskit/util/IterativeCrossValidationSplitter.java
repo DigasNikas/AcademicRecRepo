@@ -16,6 +16,7 @@ import java.util.Set;
 import net.recommenders.rival.core.DataModelIF;
 import net.recommenders.rival.core.TemporalDataModelIF;
 import net.recommenders.rival.split.splitter.CrossValidationSplitter;
+import org.apache.commons.io.FileUtils;
 
 public class IterativeCrossValidationSplitter<U, I> extends CrossValidationSplitter<U, I> {
     private String outPath;
@@ -29,17 +30,29 @@ public class IterativeCrossValidationSplitter<U, I> extends CrossValidationSplit
         try {
             File e = new File(this.outPath);
             if(!e.exists()) {
-                e.mkdir();
+                FileUtils.forceMkdir(e);
             }
 
-            FileWriter[] splits = new FileWriter[2 * this.nFolds];
+            FileWriter[] splits_1 = new FileWriter[2 * this.nFolds];
+            FileWriter[] splits_2 = new FileWriter[2 * this.nFolds];
 
             int i;
             for(i = 0; i < this.nFolds; ++i) {
                 String n = this.outPath + "train_" + i + ".csv";
                 String user = this.outPath + "test_" + i + ".csv";
-                splits[2 * i] = new FileWriter(n);
-                splits[2 * i + 1] = new FileWriter(user);
+                splits_1[2 * i] = new FileWriter(n);
+                splits_1[2 * i + 1] = new FileWriter(user);
+            }
+            // Lenskit needs YML files to read (boring)
+            for(i = 0; i < this.nFolds; ++i) {
+                String yml_n = this.outPath + "train_" + i + ".yml";
+                String yml_user = this.outPath + "test_" + i + ".yml";
+                splits_2[2 * i] = new FileWriter(yml_n);
+                splits_2[2 * i + 1] = new FileWriter(yml_user);
+                splits_2[2 * i].write("ratings:\n"+" file: train_" + i + ".csv\n"+" format: csv\n"+" header: true\n"+" entity_type: rating");
+                splits_2[2 * i + 1].write("ratings:\n"+" file: test_" + i + ".csv\n"+" format: csv\n"+" header: true\n"+" entity_type: rating");
+                splits_2[2 * i].flush();
+                splits_2[2 * i + 1].flush();
             }
 
             int curFold;
@@ -58,9 +71,9 @@ public class IterativeCrossValidationSplitter<U, I> extends CrossValidationSplit
                         int var25 = i % this.nFolds;
 
                         for(curFold = 0; curFold < this.nFolds; ++curFold) {
-                            FileWriter var26 = splits[2 * curFold];
+                            FileWriter var26 = splits_1[2 * curFold];
                             if(curFold == var25) {
-                                var26 = splits[2 * curFold + 1];
+                                var26 = splits_1[2 * curFold + 1];
                             }
 
                             if(var26 != null) {
@@ -91,9 +104,9 @@ public class IterativeCrossValidationSplitter<U, I> extends CrossValidationSplit
                         curFold = var17 % this.nFolds;
 
                         for(int i1 = 0; i1 < this.nFolds; ++i1) {
-                            FileWriter f_writer = splits[2 * i1];
+                            FileWriter f_writer = splits_1[2 * i1];
                             if(i1 == curFold) {
-                                f_writer = splits[2 * i1 + 1];
+                                f_writer = splits_1[2 * i1 + 1];
                             }
 
                             if(f_writer != null) {
@@ -110,8 +123,8 @@ public class IterativeCrossValidationSplitter<U, I> extends CrossValidationSplit
             }
 
             for(i = 0; i < this.nFolds; ++i) {
-                splits[2 * i].close();
-                splits[2 * i + 1].close();
+                splits_1[2 * i].close();
+                splits_1[2 * i + 1].close();
             }
         } catch (IOException var15) {
             var15.printStackTrace();
