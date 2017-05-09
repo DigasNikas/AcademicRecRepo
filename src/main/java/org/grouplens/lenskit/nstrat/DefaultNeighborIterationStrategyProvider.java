@@ -53,15 +53,15 @@ public class DefaultNeighborIterationStrategyProvider implements Provider<Neighb
 
     @Override
     public NeighborIterationStrategy get() {
-        return new LowestRatingItemNeighborIterationStrategy();
+        //return new LowestRatingItemNeighborIterationStrategy();
         //return new HighestRatingItemNeighborIterationStrategy();
         //return new LeastPopularItemNeighborIterationStrategy();
         //return new MostPopularItemNeighborIterationStrategy();
         //return new RandomNeighborIterationStrategy();
-        /*if (similarity.isSparse()) {
+        if (similarity.isSparse()) {
             return new SparseNeighborIterationStrategy();
         } else {
             return new BasicNeighborIterationStrategy();
-        }*/
+        }
     }
 }

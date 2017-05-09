@@ -79,6 +79,7 @@ public final class IterativeCrossValidation
     public static final long SEED = 2048L;
 
     private static final Logger logger = LoggerFactory.getLogger(HelloLenskit.class);
+
     /**
      * Utility classes should not have a public or default constructor.
      */
@@ -97,6 +98,7 @@ public final class IterativeCrossValidation
         int nFolds = N_FOLDS;
         logger.info("reading config file");
         ConfigReader config_reader = new ConfigReader(args[0]);
+        config_reader.readConfigFile();
         prepareSplits(nFolds, dataFile, modelPath);
         recommend(nFolds, modelPath, recPath, config_reader);
         // the strategy files are (currently) being ignored
@@ -146,8 +148,8 @@ public final class IterativeCrossValidation
             DataAccessObject dao_train;
             DataAccessObject dao_test;
             try {
-                StaticDataSource train_data = StaticDataSource.load(Paths.get(inPath + "train_" + i + ".csv"));
-                StaticDataSource test_data = StaticDataSource.load(Paths.get(inPath + "train_" + i + ".csv"));
+                StaticDataSource train_data = StaticDataSource.load(Paths.get(inPath + "train_" + i + ".yml"));
+                StaticDataSource test_data = StaticDataSource.load(Paths.get(inPath + "test_" + i + ".yml"));
                 // get the data from the DAO
                 dao_train = train_data.get();
                 dao_test = test_data.get();
@@ -155,7 +157,8 @@ public final class IterativeCrossValidation
                 throw Throwables.propagate(e);
             }
 
-            TrainRecommender recommender = new TrainRecommender(config_reader,dao_train,logger,new HeapMemoryPrinter(config_reader.getLogFile()));
+            TrainRecommender recommender = new TrainRecommender(config_reader,dao_train,logger,
+                    new HeapMemoryPrinter(config_reader.getLogFile()));
             recommender.train();
 
             String fileName = "recs_" + i + ".csv";
