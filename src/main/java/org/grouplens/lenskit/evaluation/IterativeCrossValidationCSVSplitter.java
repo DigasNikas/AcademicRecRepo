@@ -3,7 +3,7 @@
 // (powered by Fernflower decompiler)
 //
 
-package net.recommenders.rival.split.splitter;
+package org.grouplens.lenskit.evaluation;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -18,10 +18,10 @@ import net.recommenders.rival.core.TemporalDataModelIF;
 import net.recommenders.rival.split.splitter.CrossValidationSplitter;
 import org.apache.commons.io.FileUtils;
 
-public class IterativeCrossValidationSplitter<U, I> extends CrossValidationSplitter<U, I> {
+public class IterativeCrossValidationCSVSplitter<U, I> extends CrossValidationSplitter<U, I> {
     private String outPath;
 
-    public IterativeCrossValidationSplitter(int nFold, boolean perUsers, long seed, String outPath) {
+    public IterativeCrossValidationCSVSplitter(int nFold, boolean perUsers, long seed, String outPath) {
         super(nFold, perUsers, seed);
         this.outPath = outPath;
     }

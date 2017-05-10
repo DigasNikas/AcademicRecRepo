@@ -86,8 +86,9 @@ public class ItemItemModelProviderAdjutant {
                 fis.close();
                 toRead.delete();
             } catch (Exception e) {
-                e.printStackTrace(System.err);
-                System.exit(1);
+                System.err.println("Build Rows small trouble");
+                //e.printStackTrace(System.err);
+                //System.exit(1)
             }
         }
         return rows;

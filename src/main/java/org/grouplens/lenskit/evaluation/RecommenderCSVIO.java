@@ -3,7 +3,7 @@
 // (powered by Fernflower decompiler)
 //
 
-package net.recommenders.rival.recommend.frameworks;
+package org.grouplens.lenskit.evaluation;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -16,8 +16,8 @@ import net.recommenders.rival.core.TemporalDataModelIF;
 import org.apache.mahout.cf.taste.recommender.RecommendedItem;
 import org.grouplens.lenskit.scored.ScoredId;
 
-public final class RecommenderIO {
-    private RecommenderIO() {
+public final class RecommenderCSVIO {
+    private RecommenderCSVIO() {
     }
 
     public static <T> void writeData(long user, List<T> recommendations, String path, String fileName, boolean append, TemporalDataModelIF<Long, Long> model) {
@@ -45,7 +45,7 @@ public final class RecommenderIO {
                     if(ri instanceof RecommendedItem) {
                         RecommendedItem recItem = (RecommendedItem)ri;
                         if(out != null) {
-                            out.write(user + "\t" + recItem.getItemID() + "\t" + recItem.getValue() + "\n");
+                            out.write(user + "," + recItem.getItemID() + "," + recItem.getValue() + "\n");
                         }
 
                         if(model != null) {

@@ -21,24 +21,22 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import net.recommenders.rival.core.DataModelIF;
 import net.recommenders.rival.core.DataModelUtils;
 import net.recommenders.rival.core.Parser;
-import net.recommenders.rival.core.SimpleParser;
 import net.recommenders.rival.evaluation.metric.ranking.NDCG;
 import net.recommenders.rival.evaluation.metric.ranking.Precision;
 import net.recommenders.rival.evaluation.strategy.EvaluationStrategy;
 import net.recommenders.rival.recommend.frameworks.RecommenderIO;
 import net.recommenders.rival.split.parser.MovielensParser;
-import net.recommenders.rival.split.splitter.IterativeCrossValidationSplitter;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 import net.recommenders.rival.core.DataModelFactory;
 import net.recommenders.rival.evaluation.metric.error.RMSE;
+import org.apache.mahout.cf.taste.impl.recommender.GenericRecommendedItem;
 import org.apache.mahout.cf.taste.recommender.RecommendedItem;
-import org.grouplens.lenskit.hello.HelloLenskit;
-import org.grouplens.lenskit.hello.QueryRecommender;
 import org.grouplens.lenskit.hello.TrainRecommender;
 import org.grouplens.lenskit.util.ConfigReader;
 import org.grouplens.lenskit.util.HeapMemoryPrinter;
@@ -46,12 +44,11 @@ import org.lenskit.LenskitRecommender;
 import org.lenskit.LenskitRecommenderEngine;
 import org.lenskit.LenskitRecommenderEngineLoader;
 import org.lenskit.api.ItemRecommender;
+import org.lenskit.api.Result;
 import org.lenskit.api.ResultList;
 import org.lenskit.data.dao.DataAccessObject;
 import org.lenskit.data.dao.file.StaticDataSource;
-import org.lenskit.data.entities.CommonAttributes;
 import org.lenskit.data.entities.CommonTypes;
-import org.lenskit.data.ratings.Rating;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,7 +98,7 @@ public final class IterativeCrossValidation
     public static void main(final String[] args) {
         String modelPath = "data/ml-100k/model/";
         String recPath = "data/ml-100k/recommendations/";
-        String dataFile = "data/myData/rivalu.data";
+        String dataFile = "data/myData/u.data";
         int nFolds = N_FOLDS;
         logger.info("reading config file");
         ConfigReader config_reader = new ConfigReader(args[0]);
@@ -133,7 +130,7 @@ public final class IterativeCrossValidation
             e.printStackTrace();
         }
 
-        new IterativeCrossValidationSplitter<Long,Long>(nFolds, perUser, seed, outPath).split(data);
+        new IterativeCrossValidationCSVSplitter<Long,Long>(nFolds, perUser, seed, outPath).split(data);
         File dir = new File(outPath);
         if (!dir.exists()) {
             if (!dir.mkdir()) {
@@ -190,16 +187,18 @@ public final class IterativeCrossValidation
 
                     int size = dao_train.query(CommonTypes.ITEM).get().size();
                     ResultList recs = irec.recommendWithDetails(u, size, null, null);
-                    RecommenderIO.writeData(u, recs, outPath, fileName, !createFile, null);
-
-                    //dao_train.getEntityIds(CommonTypes.RATING).size()
-
-                    //List<RecommendedItem> items = recommender.recommend(u, trainModel.getNumItems());
-                    //RecommenderIO.writeData(u, items, outPath, fileName, !createFile, null);
+                    List<RecommendedItem> items =  new ArrayList<>();
+                    for (Result item : recs) {
+                        Long item_id = item.getId();
+                        Float item_score = (float) item.getScore();
+                        RecommendedItem to_add = new GenericRecommendedItem(item_id, item_score);
+                        items.add(to_add);
+                    }
+                    RecommenderCSVIO.writeData(u, items, outPath, fileName, !createFile, null);
                     createFile = false;
                 }
-            } catch (Exception e) { //TasteException e) {
-                //e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
@@ -223,9 +222,9 @@ public final class IterativeCrossValidation
             DataModelIF<Long, Long> testModel;
             DataModelIF<Long, Long> recModel;
             try {
-                trainingModel = new SimpleParser().parseData(trainingFile);
-                testModel = new SimpleParser().parseData(testFile);
-                recModel = new SimpleParser().parseData(recFile);
+                trainingModel = new SimpleCSVParser().parseData(trainingFile);
+                testModel = new SimpleCSVParser().parseData(testFile);
+                recModel = new SimpleCSVParser().parseData(recFile);
             } catch (IOException e) {
                 e.printStackTrace();
                 return;
@@ -275,8 +274,8 @@ public final class IterativeCrossValidation
             DataModelIF<Long, Long> testModel = null;
             DataModelIF<Long, Long> recModel = null;
             try {
-                testModel = new SimpleParser().parseData(testFile);
-                recModel = new SimpleParser().parseData(recFile);
+                testModel = new SimpleCSVParser().parseData(testFile);
+                recModel = new SimpleCSVParser().parseData(recFile);
             } catch (IOException e) {
                 e.printStackTrace();
             }
