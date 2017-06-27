@@ -20,10 +20,7 @@
  */
 package org.lenskit.knn.item.model;
 
-import org.grouplens.lenskit.nstrat.HighestRatingItemNeighborIterationStrategy;
-import org.grouplens.lenskit.nstrat.LeastPopularItemNeighborIterationStrategy;
-import org.grouplens.lenskit.nstrat.LowestRatingItemNeighborIterationStrategy;
-import org.grouplens.lenskit.nstrat.MostPopularItemNeighborIterationStrategy;
+import org.grouplens.lenskit.nstrat.*;
 import org.lenskit.inject.Transient;
 import org.lenskit.knn.item.ItemSimilarity;
 
@@ -57,11 +54,12 @@ public class DefaultNeighborIterationStrategyProvider implements Provider<Neighb
         //return new HighestRatingItemNeighborIterationStrategy();
         //return new LeastPopularItemNeighborIterationStrategy();
         //return new MostPopularItemNeighborIterationStrategy();
-        //return new RandomNeighborIterationStrategy();
-        if (similarity.isSparse()) {
+        return new RandomNeighborIterationStrategy();
+        /*if (similarity.isSparse()) {
+            System.out.println("Sparse Strategy");
             return new SparseNeighborIterationStrategy();
         } else {
             return new BasicNeighborIterationStrategy();
-        }
+        }*/
     }
 }

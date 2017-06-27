@@ -22,6 +22,7 @@ package org.lenskit.knn.item.model;
 
 import com.google.common.base.Stopwatch;
 import it.unimi.dsi.fastutil.longs.*;
+import org.grouplens.lenskit.nstrat.NeighborStrategy;
 import org.grouplens.lenskit.transform.threshold.Threshold;
 import org.lenskit.util.ScoredIdAccumulator;
 import org.grouplens.lenskit.vectors.SparseVector;
@@ -189,6 +190,10 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
             timer = Stopwatch.createStarted();
             int inside_items = 0;
 
+            NeighborStrategy strategy = new NeighborStrategy(buildContext, itemSimilarity,
+                    threshold, bufferedWriter, minCommonUsers);
+            strategy.initIterator();
+
             while (outer.hasNext()) {
                 final long itemId1 = outer.nextLong();
                 SparseVector vec1 = buildContext.itemVector(itemId1);
@@ -198,21 +203,12 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
                     continue;
                 }
 
-                LongIterator itemIter = neighborStrategy.neighborIterator(buildContext, itemId1,
-                        itemSimilarity, threshold, bufferedWriter);
+                LongIterator itemIter = strategy.neighborIterator(itemId1);
 
                 while (itemIter.hasNext()) {
                     long itemId2 = itemIter.nextLong();
-                    if (itemId1 != itemId2) {
-                        SparseVector vec2 = buildContext.itemVector(itemId2);
-                        if (!LongUtils.hasNCommonItems(vec1.keySet(), vec2.keySet(), minCommonUsers)) {
-                            // items have insufficient users in common, skip them
-                            continue;
-                        }
-
-                        double sim = itemSimilarity.similarity(itemId1, vec1, itemId2, vec2);
-                        neighborStrategy.compute(itemId1, itemId2, sim);
-                    }
+                    SparseVector vec2 = buildContext.itemVector(itemId2);
+                    strategy.compute(itemId1, vec1, itemId2, vec2);
                 }
                 inside_items++;
             }
@@ -227,7 +223,6 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
                         + timer + "\n");
                 Writer.flush();
                 bufferedWriter.flush();
-                //bufferedWriter.close();
             } catch (Exception e) {
                 e.printStackTrace(System.err);
                 System.exit(1);

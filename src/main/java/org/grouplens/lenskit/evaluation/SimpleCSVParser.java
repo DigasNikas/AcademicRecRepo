@@ -35,12 +35,12 @@ public class SimpleCSVParser implements Parser<Long, Long> {
 
     public TemporalDataModelIF<Long, Long> parseData(File f, String token, boolean isTemporal) throws IOException {
         TemporalDataModel dataset = new TemporalDataModel();
+
         BufferedReader br = getBufferedReader(f);
         String line = br.readLine();
         if(line != null && !line.matches(".*[a-zA-Z].*")) {
             this.parseLine(line, dataset, token, isTemporal);
         }
-
         while((line = br.readLine()) != null) {
             this.parseLine(line, dataset, token, isTemporal);
         }

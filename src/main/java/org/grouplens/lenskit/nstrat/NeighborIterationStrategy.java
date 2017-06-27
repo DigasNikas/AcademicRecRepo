@@ -40,7 +40,6 @@ import java.io.BufferedWriter;
 @DefaultProvider(DefaultNeighborIterationStrategyProvider.class)
 public interface NeighborIterationStrategy {
 
-    LongIterator neighborIterator(ItemItemBuildContext context, long item, ItemSimilarity itemSimilarity,
-                                         Threshold threshold, BufferedWriter bufferedWriter);
-    void compute(Long itemId1, Long itemId2, double sim);
+    LongIterator neighborIterator(long item);
+    void recompute(Long itemId1, SparseVector vec1, Long itemId2Previous);
 }

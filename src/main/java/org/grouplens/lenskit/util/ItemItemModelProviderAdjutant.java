@@ -82,7 +82,6 @@ public class ItemItemModelProviderAdjutant {
                     StringTokenizer st = new StringTokenizer(currentLine, ",", false);
                     rows.get(Long.valueOf(st.nextToken())).put(Long.valueOf(st.nextToken()), Double.valueOf(st.nextToken()));
                 }
-
                 fis.close();
                 toRead.delete();
             } catch (Exception e) {

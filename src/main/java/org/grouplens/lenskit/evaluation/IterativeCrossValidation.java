@@ -24,19 +24,17 @@ import net.recommenders.rival.core.Parser;
 import net.recommenders.rival.evaluation.metric.ranking.NDCG;
 import net.recommenders.rival.evaluation.metric.ranking.Precision;
 import net.recommenders.rival.evaluation.strategy.EvaluationStrategy;
-import net.recommenders.rival.recommend.frameworks.RecommenderIO;
 import net.recommenders.rival.split.parser.MovielensParser;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.recommenders.rival.core.DataModelFactory;
 import net.recommenders.rival.evaluation.metric.error.RMSE;
 import org.apache.mahout.cf.taste.impl.recommender.GenericRecommendedItem;
 import org.apache.mahout.cf.taste.recommender.RecommendedItem;
+import org.lenskit.api.RatingPredictor;
 import org.grouplens.lenskit.hello.TrainRecommender;
 import org.grouplens.lenskit.util.ConfigReader;
 import org.grouplens.lenskit.util.HeapMemoryPrinter;
@@ -98,15 +96,13 @@ public final class IterativeCrossValidation
     public static void main(final String[] args) {
         String modelPath = "data/ml-100k/model/";
         String recPath = "data/ml-100k/recommendations/";
-        String dataFile = "data/myData/u.data";
+        String dataFile = "data/myData/rivalu.data";
         int nFolds = N_FOLDS;
         logger.info("reading config file");
         ConfigReader config_reader = new ConfigReader(args[0]);
         config_reader.readConfigFile();
-        prepareSplits(nFolds, dataFile, modelPath);
+        //prepareSplits(nFolds, dataFile, modelPath);
         recommend(nFolds, modelPath, recPath, config_reader);
-        // the strategy files are (currently) being ignored
-        prepareStrategy(nFolds, modelPath, recPath, modelPath);
         evaluate(nFolds, modelPath, recPath);
     }
 
@@ -166,12 +162,7 @@ public final class IterativeCrossValidation
             recommender.train();
 
             String fileName = "recs_" + i + ".csv";
-
-            LongSet users = dao_test.getEntityIds(CommonTypes.USER);
-
             try {
-                LongIterator users_iterator = users.iterator();
-                boolean createFile = true;
                 File modelFile = new File(config_reader.getModelFile());
                 logger.info("loading recommender from {}", modelFile);
                 Object input = new FileInputStream(modelFile);
@@ -179,79 +170,38 @@ public final class IterativeCrossValidation
                 LenskitRecommenderEngineLoader loader = LenskitRecommenderEngine.newLoader();
                 LenskitRecommenderEngine engine = loader.load((InputStream) input);
                 LenskitRecommender rec = engine.createRecommender(dao_test);
-                ItemRecommender irec = rec.getItemRecommender();
+                RatingPredictor rp = rec.getRatingPredictor();
 
-                while (users_iterator.hasNext()) {
-                    long u = users_iterator.nextLong();
-                    assert recommender != null;
-
-                    int size = dao_train.query(CommonTypes.ITEM).get().size();
-                    ResultList recs = irec.recommendWithDetails(u, size, null, null);
-                    List<RecommendedItem> items =  new ArrayList<>();
-                    for (Result item : recs) {
-                        Long item_id = item.getId();
-                        Float item_score = (float) item.getScore();
-                        RecommendedItem to_add = new GenericRecommendedItem(item_id, item_score);
-                        items.add(to_add);
+                BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(inPath + "test_" + i + ".csv"), "UTF-8"));
+                if(outPath != null) {
+                    File e = new File(outPath);
+                    if(!e.isDirectory() && !e.mkdir() && fileName != null) {
+                        System.out.println("Directory " + outPath + " could not be created");
+                        return;
                     }
-                    RecommenderCSVIO.writeData(u, items, outPath, fileName, !createFile, null);
-                    createFile = false;
                 }
+                BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outPath + "recs_" + i + ".csv"), "UTF-8"));
+                String line;
+                int count = 0;
+                int total = 0;
+                while((line = br.readLine()) != null) {
+                    total++;
+                    String[] toks = line.split(",");
+                    long userId = Long.parseLong(toks[0]);
+                    long itemId = Long.parseLong(toks[1]);
+                    Result result = rp.predict(userId, itemId);
+                    try {
+                        bw.write(userId + "," + itemId + "," + result.getScore() + "\n");
+                    } catch (Exception e){
+                        count++;
+                    }
+                }
+                System.out.println("Missed " + count + " user,item pairs");
+                System.out.println("Coverage " + ((1-(double)count / (double)total))*100 + "%");
+                bw.flush();
+                bw.close();
+
             } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    /**
-     * Prepares the strategies to be evaluated with the recommenders already
-     * generated.
-     *
-     * @param nFolds number of folds
-     * @param splitPath path where splits have been stored
-     * @param recPath path where recommendation files have been stored
-     * @param outPath path where the filtered recommendations will be stored
-     */
-    @SuppressWarnings("unchecked")
-    public static void prepareStrategy(final int nFolds, final String splitPath, final String recPath, final String outPath) {
-        for (int i = 0; i < nFolds; i++) {
-            File trainingFile = new File(splitPath + "train_" + i + ".csv");
-            File testFile = new File(splitPath + "test_" + i + ".csv");
-            File recFile = new File(recPath + "recs_" + i + ".csv");
-            DataModelIF<Long, Long> trainingModel;
-            DataModelIF<Long, Long> testModel;
-            DataModelIF<Long, Long> recModel;
-            try {
-                trainingModel = new SimpleCSVParser().parseData(trainingFile);
-                testModel = new SimpleCSVParser().parseData(testFile);
-                recModel = new SimpleCSVParser().parseData(recFile);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
-
-            Double threshold = REL_TH;
-            String strategyClassName = "net.recommenders.rival.evaluation.strategy.UserTest";
-            EvaluationStrategy<Long, Long> strategy = null;
-            try {
-                strategy = (EvaluationStrategy<Long, Long>) (Class.forName(strategyClassName)).getConstructor(DataModelIF.class, DataModelIF.class, double.class).
-                        newInstance(trainingModel, testModel, threshold);
-            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException | InvocationTargetException e) {
-                e.printStackTrace();
-            }
-
-            DataModelIF<Long, Long> modelToEval = DataModelFactory.getDefaultModel();
-            for (Long user : recModel.getUsers()) {
-                assert strategy != null;
-                for (Long item : strategy.getCandidateItemsToRank(user)) {
-                    if (recModel.getUserItemPreferences().get(user).containsKey(item)) {
-                        modelToEval.addPreference(user, item, recModel.getUserItemPreferences().get(user).get(item));
-                    }
-                }
-            }
-            try {
-                DataModelUtils.saveDataModel(modelToEval, outPath + "strategymodel_" + i + ".csv", true, "\t");
-            } catch (FileNotFoundException | UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
         }

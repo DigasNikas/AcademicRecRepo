@@ -22,5 +22,6 @@ set MinNeighbors to 2
 bind (BaselineScorer, ItemScorer) to UserMeanItemScorer
 // Second, use the item mean rating as the base for user means
 bind (UserMeanBaseline, ItemScorer) to ItemMeanRatingItemScorer
+
 // and normalize ratings by baseline prior to computing similarities
 bind UserVectorNormalizer to BaselineSubtractingUserVectorNormalizer

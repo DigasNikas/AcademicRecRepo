@@ -21,11 +21,14 @@
 package org.lenskit.knn.item.model;
 
 import it.unimi.dsi.fastutil.longs.LongIterator;
+import org.grouplens.lenskit.nstrat.NeighborStrategy;
 import org.grouplens.lenskit.transform.threshold.Threshold;
 import org.grouplens.lenskit.vectors.SparseVector;
 import org.lenskit.knn.item.ItemSimilarity;
+import org.lenskit.util.collections.LongUtils;
 
 import java.io.BufferedWriter;
+import java.util.Map;
 
 /**
  * Neighbor iteration strategy that looks at the items co-rated with the specified item.  It may
@@ -34,33 +37,16 @@ import java.io.BufferedWriter;
  * @since 2.1
  * @author <a href="http://www.grouplens.org">GroupLens Research</a>
  */
-public class SparseNeighborIterationStrategy implements NeighborIterationStrategy {
-    private BufferedWriter bufferedWriter;
-    private ItemSimilarity itemSimilarity;
-    private Threshold threshold;
+public class SparseNeighborIterationStrategy extends NeighborStrategy implements NeighborIterationStrategy {
 
     @Override
-    public LongIterator neighborIterator(ItemItemBuildContext context, long item, ItemSimilarity itemSimilarity,
-                                         Threshold threshold, BufferedWriter bufferedWriter) {
-        this.bufferedWriter = bufferedWriter;
-        this.itemSimilarity = itemSimilarity;
-        this.threshold = threshold;
+    public LongIterator neighborIterator(long item) {
         long lowerBound = itemSimilarity.isSymmetric() ? item : Long.MIN_VALUE;
-        return new AdaptiveSparseItemIterator(context, context.itemVector(item).keySet(), lowerBound);
+        return new AdaptiveSparseItemIterator(buildContext, buildContext.itemVector(item).keySet(), lowerBound);
     }
 
     @Override
-    public void compute(Long itemId1, Long itemId2, double sim) {
-        try {
-            bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim + "\n");
-            if (itemSimilarity.isSymmetric()) {
-                bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim + "\n");
-            }
-        } catch (Exception e) {
-            System.err.println(e.toString());
-            e.printStackTrace(System.err);
-            System.exit(1);
-        }
+    public void recompute(Long itemId1, SparseVector vec1, Long itemId2Previous){
+
     }
-    // might be needed to recompute, if sim < threshold
 }

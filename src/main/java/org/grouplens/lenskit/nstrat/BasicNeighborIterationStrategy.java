@@ -21,6 +21,7 @@
 package org.lenskit.knn.item.model;
 
 import it.unimi.dsi.fastutil.longs.LongIterator;
+import org.grouplens.lenskit.nstrat.NeighborStrategy;
 import org.grouplens.lenskit.transform.threshold.Threshold;
 import org.grouplens.lenskit.vectors.SparseVector;
 import org.lenskit.knn.item.ItemSimilarity;
@@ -33,36 +34,19 @@ import java.io.BufferedWriter;
  * @since 2.1
  * @author <a href="http://www.grouplens.org">GroupLens Research</a>
  */
-public class BasicNeighborIterationStrategy implements NeighborIterationStrategy {
-    private BufferedWriter bufferedWriter;
-    private ItemSimilarity itemSimilarity;
-    private Threshold threshold;
+public class BasicNeighborIterationStrategy extends NeighborStrategy implements NeighborIterationStrategy {
 
     @Override
-    public LongIterator neighborIterator(ItemItemBuildContext context, long item, ItemSimilarity itemSimilarity,
-                                         Threshold threshold, BufferedWriter bufferedWriter) {
-        this.bufferedWriter = bufferedWriter;
-        this.itemSimilarity = itemSimilarity;
-        this.threshold = threshold;
+    public LongIterator neighborIterator(long item) {
         if (itemSimilarity.isSymmetric()) {
-            return context.getItems().iterator(item);
+            return buildContext.getItems().iterator(item);
         } else {
-            return context.getItems().iterator();
+            return buildContext.getItems().iterator();
         }
     }
 
     @Override
-    public void compute(Long itemId1, Long itemId2, double sim) {
-        try {
-            bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim + "\n");
-            if (itemSimilarity.isSymmetric()) {
-                bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim + "\n");
-            }
-        } catch (Exception e) {
-            System.err.println(e.toString());
-            e.printStackTrace(System.err);
-            System.exit(1);
-        }
-        // might be needed to recompute, if sim < threshold
+    public void recompute(Long itemId1, SparseVector vec1, Long itemId2Previous){
+
     }
 }

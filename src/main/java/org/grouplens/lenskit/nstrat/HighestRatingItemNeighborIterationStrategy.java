@@ -1,5 +1,7 @@
 package org.grouplens.lenskit.nstrat;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongList;
 import org.grouplens.lenskit.transform.threshold.Threshold;
@@ -15,36 +17,55 @@ import java.util.*;
 /**
  * Created by diogo on 06-11-2016.
  */
-public class HighestRatingItemNeighborIterationStrategy implements NeighborIterationStrategy{
-    private BufferedWriter bufferedWriter;
-    private ItemSimilarity itemSimilarity;
-    private Threshold threshold;
+public class HighestRatingItemNeighborIterationStrategy extends NeighborStrategy implements NeighborIterationStrategy{
 
-    @Override
-    public LongIterator neighborIterator(ItemItemBuildContext context, long item, ItemSimilarity itemSimilarity,
-                                         Threshold threshold, BufferedWriter bufferedWriter) {
-        this.bufferedWriter = bufferedWriter;
-        this.itemSimilarity = itemSimilarity;
-        this.threshold = threshold;
-        Set<Long> key_set = itemsMeanRating(context).keySet();
-        List<Long> list = Arrays.asList(key_set.toArray(new Long[200]));
-        LongList items = LongUtils.asLongList(list);
-        return items.iterator();
+    private List<Long> items_list = new ArrayList<>();
+
+    public HighestRatingItemNeighborIterationStrategy() {
+    }
+
+    public HighestRatingItemNeighborIterationStrategy(ItemItemBuildContext context, ItemSimilarity itemSimilarity,
+                                                      Threshold threshold, BufferedWriter bufferedWriter, int minCommonUsers) {
+        super(context, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
     }
 
     @Override
-    public void compute(Long itemId1, Long itemId2, double sim) {
-        try {
-            bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim + "\n");
-            if (itemSimilarity.isSymmetric()) {
-                bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim + "\n");
-            }
-        } catch (Exception e) {
-            System.err.println(e.toString());
-            e.printStackTrace(System.err);
-            System.exit(1);
+    public LongIterator neighborIterator(long item) {
+        if (iterator == null) {
+            Set<Long>key_set = itemsMeanRating(buildContext).keySet();
+            items_list.addAll(key_set);
+            Set<Long> subset = ImmutableSet.copyOf(Iterables.limit(key_set, number_neighbors));
+            List<Long> list = new ArrayList<Long>(subset);
+            LongList items = LongUtils.asLongList(list);
+            iterator = items.iterator();
         }
-        // might be needed to recompute, if sim < threshold
+        return iterator;
+    }
+
+    public void recompute(Long itemId1, SparseVector vec1, Long itemId2Previous){
+        int state = 0;
+        while(true){
+            long itemId2 = items_list.get(number_neighbors+state);
+            state++;
+            SparseVector vec2 = buildContext.itemVector(itemId2);
+            if(checkConditionFail(itemId1, vec1, itemId2, vec2))
+                continue;
+
+            double sim = itemSimilarity.similarity(itemId1, vec1, itemId2, vec2);
+            if (threshold.retain(sim)) {
+                try {
+                    bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim+"\n");
+                    if (itemSimilarity.isSymmetric()) {
+                        bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
+                    }
+                } catch (Exception e) {
+                    System.err.println(e.toString());
+                    e.printStackTrace(System.err);
+                    System.exit(1);
+                }
+                return;
+            }
+        }
     }
 
     private Map<Long,Double> itemsMeanRating(ItemItemBuildContext context){
@@ -81,6 +102,11 @@ public class HighestRatingItemNeighborIterationStrategy implements NeighborItera
             result.put(entry.getKey(), entry.getValue());
         }
         return result;
+    }
+
+    private boolean checkConditionFail(Long itemId1, SparseVector vec1, Long itemId2, SparseVector vec2){
+        // if items are the same or items have insufficient users in common, skip them
+        return (itemId1 == itemId2 || !LongUtils.hasNCommonItems(vec1.keySet(), vec2.keySet(), minCommonUsers));
     }
 
 }

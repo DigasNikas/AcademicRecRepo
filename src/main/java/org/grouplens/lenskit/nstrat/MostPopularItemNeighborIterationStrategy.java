@@ -1,5 +1,7 @@
 package org.grouplens.lenskit.nstrat;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongList;
 import org.grouplens.lenskit.transform.threshold.Threshold;
@@ -16,36 +18,22 @@ import java.util.*;
 /**
  * Created by diogo on 26-10-2016.
  */
-public class MostPopularItemNeighborIterationStrategy implements NeighborIterationStrategy{
-    private ItemSimilarity itemSimilarity;
-    private BufferedWriter bufferedWriter;
-    private Threshold threshold;
+public class MostPopularItemNeighborIterationStrategy extends NeighborStrategy implements NeighborIterationStrategy{
 
     @Override
-    public LongIterator neighborIterator(ItemItemBuildContext context, long item, ItemSimilarity itemSimilarity,
-                                         Threshold threshold, BufferedWriter bufferedWriter) {
-        this.bufferedWriter = bufferedWriter;
-        this.itemSimilarity = itemSimilarity;
-        this.threshold = threshold;
-        Set<Long> key_set = itemsVectorSize(context).keySet();
-        List<Long> list = Arrays.asList(key_set.toArray(new Long[200]));
-        LongList items = LongUtils.asLongList(list);
-        return items.iterator();
+    public LongIterator neighborIterator(long item) {
+        if (iterator == null) {
+            Set<Long> key_set = itemsVectorSize(buildContext).keySet();
+            Set<Long> subset = ImmutableSet.copyOf(Iterables.limit(key_set, 200));
+            List<Long> list = new ArrayList<Long>(subset);
+            LongList items = LongUtils.asLongList(list);
+            iterator = items.iterator();
+        }
+        return iterator;
     }
 
-    @Override
-    public void compute(Long itemId1, Long itemId2, double sim) {
-        try {
-            bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim + "\n");
-            if (itemSimilarity.isSymmetric()) {
-                bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim + "\n");
-            }
-        } catch (Exception e) {
-            System.err.println(e.toString());
-            e.printStackTrace(System.err);
-            System.exit(1);
-        }
-        // might be needed to recompute, if sim < threshold
+    public void recompute(Long itemId1, SparseVector vec1, Long itemId2Previous){
+
     }
 
     private Map<Long,Integer> itemsVectorSize(ItemItemBuildContext context){
