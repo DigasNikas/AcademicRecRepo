@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Created by diogo on 06-11-2016.
  */
-public class HighestRatingItemNeighborIterationStrategy extends NeighborStrategy implements NeighborIterationStrategy{
+public class HighestRatingItemNeighborIterationStrategy extends SingleListStrategy implements NeighborIterationStrategy{
 
     private List<Long> items_list = new ArrayList<>();
 
@@ -33,39 +33,13 @@ public class HighestRatingItemNeighborIterationStrategy extends NeighborStrategy
     public LongIterator neighborIterator(long item) {
         if (iterator == null) {
             Set<Long>key_set = itemsMeanRating(buildContext).keySet();
-            items_list.addAll(key_set);
+            super.items_list.addAll(key_set);
             Set<Long> subset = ImmutableSet.copyOf(Iterables.limit(key_set, number_neighbors));
             List<Long> list = new ArrayList<Long>(subset);
             LongList items = LongUtils.asLongList(list);
             iterator = items.iterator();
         }
         return iterator;
-    }
-
-    public void recompute(Long itemId1, SparseVector vec1, Long itemId2Previous){
-        int state = 0;
-        while(true){
-            long itemId2 = items_list.get(number_neighbors+state);
-            state++;
-            SparseVector vec2 = buildContext.itemVector(itemId2);
-            if(checkConditionFail(itemId1, vec1, itemId2, vec2))
-                continue;
-
-            double sim = itemSimilarity.similarity(itemId1, vec1, itemId2, vec2);
-            if (threshold.retain(sim)) {
-                try {
-                    bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim+"\n");
-                    if (itemSimilarity.isSymmetric()) {
-                        bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
-                    }
-                } catch (Exception e) {
-                    System.err.println(e.toString());
-                    e.printStackTrace(System.err);
-                    System.exit(1);
-                }
-                return;
-            }
-        }
     }
 
     private Map<Long,Double> itemsMeanRating(ItemItemBuildContext context){
@@ -102,11 +76,6 @@ public class HighestRatingItemNeighborIterationStrategy extends NeighborStrategy
             result.put(entry.getKey(), entry.getValue());
         }
         return result;
-    }
-
-    private boolean checkConditionFail(Long itemId1, SparseVector vec1, Long itemId2, SparseVector vec2){
-        // if items are the same or items have insufficient users in common, skip them
-        return (itemId1 == itemId2 || !LongUtils.hasNCommonItems(vec1.keySet(), vec2.keySet(), minCommonUsers));
     }
 
 }

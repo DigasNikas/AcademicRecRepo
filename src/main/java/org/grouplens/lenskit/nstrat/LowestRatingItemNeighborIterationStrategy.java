@@ -17,13 +17,23 @@ import java.util.*;
 /**
  * Created by diogo on 06-11-2016.
  */
-public class LowestRatingItemNeighborIterationStrategy extends NeighborStrategy implements NeighborIterationStrategy{
+public class LowestRatingItemNeighborIterationStrategy extends SingleListStrategy implements NeighborIterationStrategy{
+
+    private List<Long> items_list = new ArrayList<>();
+
+    public LowestRatingItemNeighborIterationStrategy(){}
+
+    public LowestRatingItemNeighborIterationStrategy(ItemItemBuildContext context, ItemSimilarity itemSimilarity,
+                                                     Threshold threshold, BufferedWriter bufferedWriter, int minCommonUsers) {
+        super(context, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
+    }
 
     @Override
     public LongIterator neighborIterator(long item) {
         if (iterator==null) {
             Set<Long> key_set = itemsMeanRating(buildContext).keySet();
-            Set<Long> subset = ImmutableSet.copyOf(Iterables.limit(key_set, 200));
+            super.items_list.addAll(key_set);
+            Set<Long> subset = ImmutableSet.copyOf(Iterables.limit(key_set, number_neighbors));
             List<Long> list = new ArrayList<Long>(subset);
             LongList items = LongUtils.asLongList(list);
             iterator = items.iterator();

@@ -49,7 +49,7 @@ public class RandomNeighborIterationStrategy extends NeighborStrategy implements
             }
             used.add(pair);
             SparseVector vec2 = buildContext.itemVector(itemId2);
-            if(checkConditionFail(itemId1, vec1, itemId2, vec2))
+            if(super.checkConditionFail(itemId1, vec1, itemId2, vec2))
                 continue;
 
             double sim = itemSimilarity.similarity(itemId1, vec1, itemId2, vec2);
@@ -76,8 +76,4 @@ public class RandomNeighborIterationStrategy extends NeighborStrategy implements
         return item2.iterator().nextLong();
     }
 
-    private boolean checkConditionFail(Long itemId1, SparseVector vec1, Long itemId2, SparseVector vec2){
-        // if items are the same or items have insufficient users in common, skip them
-        return (itemId1 == itemId2 || !LongUtils.hasNCommonItems(vec1.keySet(), vec2.keySet(), minCommonUsers));
-    }
 }

@@ -18,22 +18,28 @@ import java.util.*;
 /**
  * Created by diogo on 26-10-2016.
  */
-public class MostPopularItemNeighborIterationStrategy extends NeighborStrategy implements NeighborIterationStrategy{
+public class MostPopularItemNeighborIterationStrategy extends SingleListStrategy implements NeighborIterationStrategy{
+
+    private List<Long> items_list = new ArrayList<>();
+
+    public MostPopularItemNeighborIterationStrategy(){}
+
+    public MostPopularItemNeighborIterationStrategy(ItemItemBuildContext context, ItemSimilarity itemSimilarity,
+                                                     Threshold threshold, BufferedWriter bufferedWriter, int minCommonUsers) {
+        super(context, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
+    }
 
     @Override
     public LongIterator neighborIterator(long item) {
         if (iterator == null) {
             Set<Long> key_set = itemsVectorSize(buildContext).keySet();
-            Set<Long> subset = ImmutableSet.copyOf(Iterables.limit(key_set, 200));
+            super.items_list.addAll(key_set);
+            Set<Long> subset = ImmutableSet.copyOf(Iterables.limit(key_set, number_neighbors));
             List<Long> list = new ArrayList<Long>(subset);
             LongList items = LongUtils.asLongList(list);
             iterator = items.iterator();
         }
         return iterator;
-    }
-
-    public void recompute(Long itemId1, SparseVector vec1, Long itemId2Previous){
-
     }
 
     private Map<Long,Integer> itemsVectorSize(ItemItemBuildContext context){
