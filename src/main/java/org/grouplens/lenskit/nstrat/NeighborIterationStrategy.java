@@ -22,6 +22,7 @@ package org.lenskit.knn.item.model;
 
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import org.grouplens.grapht.annotation.DefaultProvider;
+import org.grouplens.lenskit.nstrat.NeighborStrategy;
 import org.grouplens.lenskit.transform.threshold.Threshold;
 import org.grouplens.lenskit.vectors.SparseVector;
 import org.lenskit.knn.item.ItemSimilarity;
@@ -40,6 +41,6 @@ import java.io.BufferedWriter;
 @DefaultProvider(DefaultNeighborIterationStrategyProvider.class)
 public interface NeighborIterationStrategy {
 
-    LongIterator neighborIterator(long item);
-    void recompute(Long itemId1, SparseVector vec1, Long itemId2Previous);
+    LongIterator neighborIterator(NeighborStrategy strategy,long item);
+    void recompute(NeighborStrategy strategy, Long itemId1, SparseVector vec1, Long itemId2Previous);
 }

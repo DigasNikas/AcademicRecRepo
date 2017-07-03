@@ -34,19 +34,19 @@ import java.io.BufferedWriter;
  * @since 2.1
  * @author <a href="http://www.grouplens.org">GroupLens Research</a>
  */
-public class BasicNeighborIterationStrategy extends NeighborStrategy implements NeighborIterationStrategy {
+public class BasicNeighborIterationStrategy implements NeighborIterationStrategy {
 
     @Override
-    public LongIterator neighborIterator(long item) {
-        if (itemSimilarity.isSymmetric()) {
-            return buildContext.getItems().iterator(item);
+    public LongIterator neighborIterator(NeighborStrategy strategy, long item) {
+        if (strategy.itemSimilarity.isSymmetric()) {
+            return strategy.buildContext.getItems().iterator(item);
         } else {
-            return buildContext.getItems().iterator();
+            return strategy.buildContext.getItems().iterator();
         }
     }
 
     @Override
-    public void recompute(Long itemId1, SparseVector vec1, Long itemId2Previous){
+    public void recompute(NeighborStrategy strategy, Long itemId1, SparseVector vec1, Long itemId2Previous){
 
     }
 }

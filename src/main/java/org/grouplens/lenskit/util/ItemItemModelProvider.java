@@ -22,7 +22,7 @@ package org.lenskit.knn.item.model;
 
 import com.google.common.base.Stopwatch;
 import it.unimi.dsi.fastutil.longs.*;
-import org.grouplens.lenskit.nstrat.NeighborStrategy;
+import org.grouplens.lenskit.nstrat.*;
 import org.grouplens.lenskit.transform.threshold.Threshold;
 import org.lenskit.util.ScoredIdAccumulator;
 import org.grouplens.lenskit.vectors.SparseVector;
@@ -100,7 +100,8 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
                 .setWindow(50)
                 .start();
 
-        int n_threads = Runtime.getRuntime().availableProcessors();
+        //int n_threads = Runtime.getRuntime().availableProcessors();
+        int n_threads = 1;
         Thread Pool[] = new Thread[n_threads];
 
         int previous_items = 0;
@@ -192,7 +193,11 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
 
             NeighborStrategy strategy = new NeighborStrategy(buildContext, itemSimilarity,
                     threshold, bufferedWriter, minCommonUsers);
-            strategy.initIterator();
+            //NeighborIterationStrategy n_strategy = new RandomNeighborIterationStrategy();
+            //NeighborIterationStrategy n_strategy = new HighestRatingItemNeighborIterationStrategy();
+            //NeighborIterationStrategy n_strategy = new LeastPopularItemNeighborIterationStrategy();
+            //NeighborIterationStrategy n_strategy = new LowestRatingItemNeighborIterationStrategy();
+            NeighborIterationStrategy n_strategy = new MostPopularItemNeighborIterationStrategy();
 
             while (outer.hasNext()) {
                 final long itemId1 = outer.nextLong();
@@ -203,12 +208,12 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
                     continue;
                 }
 
-                LongIterator itemIter = strategy.neighborIterator(itemId1);
+                LongIterator itemIter = strategy.neighborIterator(n_strategy, itemId1);
 
                 while (itemIter.hasNext()) {
                     long itemId2 = itemIter.nextLong();
                     SparseVector vec2 = buildContext.itemVector(itemId2);
-                    strategy.compute(itemId1, vec1, itemId2, vec2);
+                    strategy.compute(n_strategy, itemId1, vec1, itemId2, vec2);
                 }
                 inside_items++;
             }

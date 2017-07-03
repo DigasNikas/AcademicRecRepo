@@ -9,6 +9,9 @@ import org.lenskit.knn.item.model.NeighborIterationStrategy;
 import org.lenskit.util.collections.LongUtils;
 
 import java.io.BufferedWriter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -16,13 +19,14 @@ import java.io.BufferedWriter;
  */
 public class NeighborStrategy {
     protected BufferedWriter bufferedWriter;
-    protected ItemItemBuildContext buildContext;
+    public ItemItemBuildContext buildContext;
     protected Threshold threshold;
-    protected ItemSimilarity itemSimilarity;
+    public ItemSimilarity itemSimilarity;
     protected int minCommonUsers;
     public LongIterator iterator;
-    private NeighborIterationStrategy neighborIterationStrategy;
-    protected int number_neighbors = 200;
+    protected int number_neighbors = 20;
+    protected int state;
+    protected List<Map.Entry<Long,Long>> used;
 
     public NeighborStrategy(){}
 
@@ -35,33 +39,31 @@ public class NeighborStrategy {
         this.minCommonUsers = minCommonUsers;
     }
 
-    public void initIterator(){
-        this.neighborIterationStrategy = get();
-    }
-
-    public NeighborIterationStrategy get(){
+    //public NeighborIterationStrategy get(){
         //return new LowestRatingItemNeighborIterationStrategy(buildContext, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
         //return new HighestRatingItemNeighborIterationStrategy(buildContext, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
         //return new LeastPopularItemNeighborIterationStrategy(buildContext, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
-        return new MostPopularItemNeighborIterationStrategy(buildContext, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
-        //return new RandomNeighborIterationStrategy(buildContext, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
+        //return new MostPopularItemNeighborIterationStrategy(buildContext, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
+        //return new RandomNeighborIterationStrategy();
         /*if (similarity.isSparse()) {
             System.out.println("Sparse Strategy");
             return new SparseNeighborIterationStrategy(buildContext, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
         } else {
             return new BasicNeighborIterationStrategy(buildContext, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
         }*/
-    }
+    //}
 
-    public LongIterator neighborIterator(long item){
-        iterator = neighborIterationStrategy.neighborIterator(item);
+    public LongIterator neighborIterator(NeighborIterationStrategy strategy, long item){
+        state = 0;
+        used = new ArrayList<>();
+        iterator = strategy.neighborIterator(this, item);
         return iterator;
     }
 
-    public void compute(Long itemId1, SparseVector vec1, Long itemId2, SparseVector vec2) {
+    public void compute(NeighborIterationStrategy strategy, Long itemId1, SparseVector vec1, Long itemId2, SparseVector vec2) {
 
         if (checkConditionFail(itemId1, vec1, itemId2, vec2))
-            neighborIterationStrategy.recompute(itemId1, vec1, itemId2);
+            strategy.recompute(this, itemId1, vec1, itemId2);
         else {
             double sim = itemSimilarity.similarity(itemId1, vec1, itemId2, vec2);
             if (threshold.retain(sim)) {
@@ -76,7 +78,7 @@ public class NeighborStrategy {
                     e.printStackTrace(System.err);
                     System.exit(1);
                 }
-            } else neighborIterationStrategy.recompute(itemId1, vec1, itemId2);
+            } else strategy.recompute(this, itemId1, vec1, itemId2);
         }
     }
 

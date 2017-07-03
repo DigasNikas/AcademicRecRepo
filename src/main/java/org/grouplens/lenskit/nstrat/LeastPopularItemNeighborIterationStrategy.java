@@ -20,25 +20,17 @@ import java.util.*;
  */
 public class LeastPopularItemNeighborIterationStrategy extends SingleListStrategy implements NeighborIterationStrategy{
 
-    public LeastPopularItemNeighborIterationStrategy(){}
-
-    public LeastPopularItemNeighborIterationStrategy(ItemItemBuildContext context, ItemSimilarity itemSimilarity,
-                                           Threshold threshold, BufferedWriter bufferedWriter, int minCommonUsers) {
-        super(context, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
-    }
-
-
     @Override
-    public LongIterator neighborIterator(long item) {
-        if (iterator==null) {
-            Set<Long> key_set = itemsVectorSize(buildContext).keySet();
+    public LongIterator neighborIterator(NeighborStrategy strategy, long item) {
+        if (strategy.iterator==null) {
+            Set<Long> key_set = itemsVectorSize(strategy.buildContext).keySet();
             super.items_list.addAll(key_set);
-            Set<Long> subset = ImmutableSet.copyOf(Iterables.limit(key_set, number_neighbors));
+            Set<Long> subset = ImmutableSet.copyOf(Iterables.limit(key_set, strategy.number_neighbors));
             List<Long> list = new ArrayList<Long>(subset);
-            LongList items = LongUtils.asLongList(list);
-            iterator = items.iterator();
+            super.items = LongUtils.asLongList(list);
+            strategy.iterator = items.iterator();
         }
-        return iterator;
+        return super.items.iterator();
     }
 
     private Map<Long,Integer> itemsVectorSize(ItemItemBuildContext context){

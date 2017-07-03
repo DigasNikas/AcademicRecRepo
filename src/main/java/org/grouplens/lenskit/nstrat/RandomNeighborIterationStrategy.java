@@ -20,44 +20,37 @@ import java.util.Random;
 /**
  * Created by diogo on 23-10-2016.
  */
-public class RandomNeighborIterationStrategy extends NeighborStrategy implements NeighborIterationStrategy {
+public class RandomNeighborIterationStrategy implements NeighborIterationStrategy {
 
-    public RandomNeighborIterationStrategy(){}
-
-    public RandomNeighborIterationStrategy(ItemItemBuildContext context, ItemSimilarity itemSimilarity,
-                                           Threshold threshold, BufferedWriter bufferedWriter, int minCommonUsers) {
-        super(context, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
-    }
 
     @Override
-    public LongIterator neighborIterator(long item) {
+    public LongIterator neighborIterator(NeighborStrategy strategy, long item) {
         Random rnd = new Random();
-        LongSet items = LongUtils.randomSubset(buildContext.getItems(), number_neighbors, rnd);
+        LongSet items = LongUtils.randomSubset(strategy.buildContext.getItems(), strategy.number_neighbors, rnd);
         return items.iterator();
     }
 
     @Override
-    public void recompute(Long itemId1, SparseVector vec1, Long itemId2Previous){
-        List<Map.Entry<Long,Long>> used = new ArrayList<>();
+    public void recompute(NeighborStrategy strategy, Long itemId1, SparseVector vec1, Long itemId2Previous){
         Long iterationCount = 0L;
         while(true) {
             iterationCount++;
-            long itemId2 = generateNewRandom(itemId2Previous+iterationCount);
+            long itemId2 = generateNewRandom(strategy, itemId2Previous+iterationCount);
             Map.Entry<Long,Long> pair = new java.util.AbstractMap.SimpleEntry<>(itemId1,itemId2);
-            if (used.contains(pair)) {
+            if (strategy.used.contains(pair)) {
                 continue;
             }
-            used.add(pair);
-            SparseVector vec2 = buildContext.itemVector(itemId2);
-            if(super.checkConditionFail(itemId1, vec1, itemId2, vec2))
+            strategy.used.add(pair);
+            SparseVector vec2 = strategy.buildContext.itemVector(itemId2);
+            if(strategy.checkConditionFail(itemId1, vec1, itemId2, vec2))
                 continue;
 
-            double sim = itemSimilarity.similarity(itemId1, vec1, itemId2, vec2);
-            if (threshold.retain(sim)) {
+            double sim = strategy.itemSimilarity.similarity(itemId1, vec1, itemId2, vec2);
+            if (strategy.threshold.retain(sim)) {
                 try {
-                    bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim+"\n");
-                    if (itemSimilarity.isSymmetric()) {
-                        bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
+                    strategy.bufferedWriter.write(itemId1 + "," + itemId2 + "," + sim+"\n");
+                    if (strategy.itemSimilarity.isSymmetric()) {
+                        strategy.bufferedWriter.write(itemId2 + "," + itemId1 + "," + sim+"\n");
                     }
                 } catch (Exception e) {
                     System.err.println(e.toString());
@@ -69,10 +62,10 @@ public class RandomNeighborIterationStrategy extends NeighborStrategy implements
         }
     }
 
-    private Long generateNewRandom(Long item){
+    private Long generateNewRandom(NeighborStrategy strategy, Long item){
         Random rnd = new Random();
         rnd.setSeed(item);
-        LongSet item2 = LongUtils.randomSubset(buildContext.getItems(),1,rnd);
+        LongSet item2 = LongUtils.randomSubset(strategy.buildContext.getItems(),1,rnd);
         return item2.iterator().nextLong();
     }
 

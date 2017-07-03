@@ -19,30 +19,17 @@ import java.util.*;
  */
 public class LowestRatingItemNeighborIterationStrategy extends SingleListStrategy implements NeighborIterationStrategy{
 
-    private List<Long> items_list = new ArrayList<>();
-
-    public LowestRatingItemNeighborIterationStrategy(){}
-
-    public LowestRatingItemNeighborIterationStrategy(ItemItemBuildContext context, ItemSimilarity itemSimilarity,
-                                                     Threshold threshold, BufferedWriter bufferedWriter, int minCommonUsers) {
-        super(context, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
-    }
-
     @Override
-    public LongIterator neighborIterator(long item) {
-        if (iterator==null) {
-            Set<Long> key_set = itemsMeanRating(buildContext).keySet();
+    public LongIterator neighborIterator(NeighborStrategy strategy, long item) {
+        if (super.items==null) {
+            Set<Long> key_set = itemsMeanRating(strategy.buildContext).keySet();
             super.items_list.addAll(key_set);
-            Set<Long> subset = ImmutableSet.copyOf(Iterables.limit(key_set, number_neighbors));
+            Set<Long> subset = ImmutableSet.copyOf(Iterables.limit(key_set, strategy.number_neighbors));
             List<Long> list = new ArrayList<Long>(subset);
-            LongList items = LongUtils.asLongList(list);
-            iterator = items.iterator();
+            super.items = LongUtils.asLongList(list);
+            strategy.iterator = super.items.iterator();
         }
-        return iterator;
-    }
-
-    public void recompute(Long itemId1, SparseVector vec1, Long itemId2Previous){
-
+        return super.items.iterator();
     }
 
     private Map<Long,Double> itemsMeanRating(ItemItemBuildContext context){

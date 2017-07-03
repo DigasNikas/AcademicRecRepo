@@ -37,16 +37,16 @@ import java.util.Map;
  * @since 2.1
  * @author <a href="http://www.grouplens.org">GroupLens Research</a>
  */
-public class SparseNeighborIterationStrategy extends NeighborStrategy implements NeighborIterationStrategy {
+public class SparseNeighborIterationStrategy implements NeighborIterationStrategy {
 
     @Override
-    public LongIterator neighborIterator(long item) {
-        long lowerBound = itemSimilarity.isSymmetric() ? item : Long.MIN_VALUE;
-        return new AdaptiveSparseItemIterator(buildContext, buildContext.itemVector(item).keySet(), lowerBound);
+    public LongIterator neighborIterator(NeighborStrategy strategy, long item) {
+        long lowerBound = strategy.itemSimilarity.isSymmetric() ? item : Long.MIN_VALUE;
+        return new AdaptiveSparseItemIterator(strategy.buildContext, strategy.buildContext.itemVector(item).keySet(), lowerBound);
     }
 
     @Override
-    public void recompute(Long itemId1, SparseVector vec1, Long itemId2Previous){
+    public void recompute(NeighborStrategy strategy, Long itemId1, SparseVector vec1, Long itemId2Previous){
 
     }
 }
