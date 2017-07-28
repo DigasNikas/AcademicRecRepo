@@ -1,5 +1,5 @@
 results/trained.gz
-etc/item-item-test.groovy
+etc/item-item.groovy
 data/myData/myData.yml
 results/test_input.txt
 results/test_output.txt

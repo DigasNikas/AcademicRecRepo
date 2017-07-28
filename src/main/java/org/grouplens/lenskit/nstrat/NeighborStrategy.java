@@ -24,7 +24,7 @@ public class NeighborStrategy {
     public ItemSimilarity itemSimilarity;
     protected int minCommonUsers;
     public LongIterator iterator;
-    protected int number_neighbors = 20;
+    protected int number_neighbors = 1400;
     protected int state;
     protected List<Map.Entry<Long,Long>> used;
 
@@ -38,20 +38,6 @@ public class NeighborStrategy {
         this.itemSimilarity = itemSimilarity;
         this.minCommonUsers = minCommonUsers;
     }
-
-    //public NeighborIterationStrategy get(){
-        //return new LowestRatingItemNeighborIterationStrategy(buildContext, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
-        //return new HighestRatingItemNeighborIterationStrategy(buildContext, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
-        //return new LeastPopularItemNeighborIterationStrategy(buildContext, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
-        //return new MostPopularItemNeighborIterationStrategy(buildContext, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
-        //return new RandomNeighborIterationStrategy();
-        /*if (similarity.isSparse()) {
-            System.out.println("Sparse Strategy");
-            return new SparseNeighborIterationStrategy(buildContext, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
-        } else {
-            return new BasicNeighborIterationStrategy(buildContext, itemSimilarity, threshold, bufferedWriter, minCommonUsers);
-        }*/
-    //}
 
     public LongIterator neighborIterator(NeighborIterationStrategy strategy, long item){
         state = 0;

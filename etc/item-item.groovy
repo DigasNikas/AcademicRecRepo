@@ -9,6 +9,7 @@ import org.lenskit.baseline.UserMeanBaseline
 import org.lenskit.baseline.UserMeanItemScorer
 import org.lenskit.knn.MinNeighbors
 import org.lenskit.knn.item.ItemItemScorer
+import org.lenskit.knn.NeighborhoodSize
 
 // ... and configure the item scorer.  The bind and set methods
 // are what you use to do that. Here, we want an item-item scorer.
@@ -24,3 +25,5 @@ bind (BaselineScorer, ItemScorer) to UserMeanItemScorer
 bind (UserMeanBaseline, ItemScorer) to ItemMeanRatingItemScorer
 // and normalize ratings by baseline prior to computing similarities
 bind UserVectorNormalizer to BaselineSubtractingUserVectorNormalizer
+
+set NeighborhoodSize to 1400

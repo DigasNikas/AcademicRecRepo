@@ -197,7 +197,15 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
             //NeighborIterationStrategy n_strategy = new HighestRatingItemNeighborIterationStrategy();
             //NeighborIterationStrategy n_strategy = new LeastPopularItemNeighborIterationStrategy();
             //NeighborIterationStrategy n_strategy = new LowestRatingItemNeighborIterationStrategy();
-            NeighborIterationStrategy n_strategy = new MostPopularItemNeighborIterationStrategy();
+            //NeighborIterationStrategy n_strategy = new MostPopularItemNeighborIterationStrategy();
+            NeighborIterationStrategy n_strategy = new AdaptativePopularNeighborIterationStrategy();
+            /*NeighborIterationStrategy n_strategy;
+            if (itemSimilarity.isSparse()) {
+                System.out.println("Sparse Strategy");
+                n_strategy = new SparseNeighborIterationStrategy();
+            } else {
+                n_strategy = new BasicNeighborIterationStrategy();
+            }*/
 
             while (outer.hasNext()) {
                 final long itemId1 = outer.nextLong();
