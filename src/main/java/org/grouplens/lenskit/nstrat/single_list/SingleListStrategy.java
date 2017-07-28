@@ -1,6 +1,7 @@
-package org.grouplens.lenskit.nstrat;
+package org.grouplens.lenskit.nstrat.single_list;
 
 import it.unimi.dsi.fastutil.longs.LongList;
+import org.grouplens.lenskit.nstrat.NeighborStrategy;
 import org.grouplens.lenskit.vectors.SparseVector;
 
 import java.util.ArrayList;

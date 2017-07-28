@@ -18,31 +18,32 @@
  * this program; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
-package org.lenskit.knn.item.model;
+package org.grouplens.lenskit.nstrat.lenskit_native;
 
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import org.grouplens.lenskit.nstrat.NeighborStrategy;
 import org.grouplens.lenskit.transform.threshold.Threshold;
 import org.grouplens.lenskit.vectors.SparseVector;
 import org.lenskit.knn.item.ItemSimilarity;
-import org.lenskit.util.collections.LongUtils;
+import org.lenskit.knn.item.model.NeighborIterationStrategy;
 
 import java.io.BufferedWriter;
-import java.util.Map;
 
 /**
- * Neighbor iteration strategy that looks at the items co-rated with the specified item.  It may
- * return more than those items, however, if it looks like it might be faster to not filter.
+ * Neighbor iteration strategy that considers all items to be candidate neighbors.
  *
  * @since 2.1
  * @author <a href="http://www.grouplens.org">GroupLens Research</a>
  */
-public class SparseNeighborIterationStrategy implements NeighborIterationStrategy {
+public class BasicNeighborIterationStrategy implements NeighborIterationStrategy {
 
     @Override
     public LongIterator neighborIterator(NeighborStrategy strategy, long item) {
-        long lowerBound = strategy.itemSimilarity.isSymmetric() ? item : Long.MIN_VALUE;
-        return new AdaptiveSparseItemIterator(strategy.buildContext, strategy.buildContext.itemVector(item).keySet(), lowerBound);
+        if (strategy.itemSimilarity.isSymmetric()) {
+            return strategy.buildContext.getItems().iterator(item);
+        } else {
+            return strategy.buildContext.getItems().iterator();
+        }
     }
 
     @Override

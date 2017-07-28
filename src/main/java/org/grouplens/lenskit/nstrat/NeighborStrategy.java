@@ -18,15 +18,15 @@ import java.util.Map;
  * Created by diogo on 27-06-2017.
  */
 public class NeighborStrategy {
-    protected BufferedWriter bufferedWriter;
+    public BufferedWriter bufferedWriter;
     public ItemItemBuildContext buildContext;
-    protected Threshold threshold;
+    public Threshold threshold;
     public ItemSimilarity itemSimilarity;
-    protected int minCommonUsers;
+    public int minCommonUsers;
     public LongIterator iterator;
-    protected int number_neighbors = 1400;
-    protected int state;
-    protected List<Map.Entry<Long,Long>> used;
+    public int number_neighbors = 20;
+    public int state;
+    public List<Map.Entry<Long,Long>> used;
 
     public NeighborStrategy(){}
 
@@ -69,7 +69,7 @@ public class NeighborStrategy {
     }
 
 
-    protected boolean checkConditionFail(Long itemId1, SparseVector vec1, Long itemId2, SparseVector vec2){
+    public boolean checkConditionFail(Long itemId1, SparseVector vec1, Long itemId2, SparseVector vec2){
         // if items are the same or items have insufficient users in common, skip them
         return (itemId1 == itemId2 || !LongUtils.hasNCommonItems(vec1.keySet(), vec2.keySet(), minCommonUsers));
     }

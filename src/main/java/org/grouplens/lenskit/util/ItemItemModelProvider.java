@@ -23,6 +23,8 @@ package org.lenskit.knn.item.model;
 import com.google.common.base.Stopwatch;
 import it.unimi.dsi.fastutil.longs.*;
 import org.grouplens.lenskit.nstrat.*;
+import org.grouplens.lenskit.nstrat.adaptative.AdaptativeEntryNeighborIterationStrategy;
+import org.grouplens.lenskit.nstrat.adaptative.ExponentialDecayNeighborIterationStrategy;
 import org.grouplens.lenskit.transform.threshold.Threshold;
 import org.lenskit.util.ScoredIdAccumulator;
 import org.grouplens.lenskit.vectors.SparseVector;
@@ -32,7 +34,6 @@ import org.lenskit.knn.item.ItemSimilarityThreshold;
 import org.lenskit.knn.item.MinCommonUsers;
 import org.lenskit.knn.item.ModelSize;
 import org.lenskit.util.ProgressLogger;
-import org.lenskit.util.collections.LongUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -198,7 +199,8 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
             //NeighborIterationStrategy n_strategy = new LeastPopularItemNeighborIterationStrategy();
             //NeighborIterationStrategy n_strategy = new LowestRatingItemNeighborIterationStrategy();
             //NeighborIterationStrategy n_strategy = new MostPopularItemNeighborIterationStrategy();
-            NeighborIterationStrategy n_strategy = new AdaptativePopularNeighborIterationStrategy();
+            //NeighborIterationStrategy n_strategy = new AdaptativeEntryNeighborIterationStrategy();
+            NeighborIterationStrategy n_strategy = new ExponentialDecayNeighborIterationStrategy();
             /*NeighborIterationStrategy n_strategy;
             if (itemSimilarity.isSparse()) {
                 System.out.println("Sparse Strategy");

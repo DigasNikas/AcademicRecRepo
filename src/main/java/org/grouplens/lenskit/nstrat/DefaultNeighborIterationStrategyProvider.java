@@ -20,7 +20,7 @@
  */
 package org.lenskit.knn.item.model;
 
-import org.grouplens.lenskit.nstrat.*;
+import org.grouplens.lenskit.nstrat.random.RandomNeighborIterationStrategy;
 import org.lenskit.inject.Transient;
 import org.lenskit.knn.item.ItemSimilarity;
 
@@ -29,8 +29,8 @@ import javax.inject.Provider;
 
 /**
  * Provider to auto-select an appropriate neighbor iteration strategy.  It uses the similarity
- * function to decide which to use, using {@link SparseNeighborIterationStrategy} if the function
- * is sparse and {@link BasicNeighborIterationStrategy} otherwise.
+ * function to decide which to use, using {@link org.grouplens.lenskit.nstrat.lenskit_native.SparseNeighborIterationStrategy} if the function
+ * is sparse and {@link org.grouplens.lenskit.nstrat.lenskit_native.BasicNeighborIterationStrategy} otherwise.
  *
  * @see ItemSimilarity#isSparse()
  * @since 2.1

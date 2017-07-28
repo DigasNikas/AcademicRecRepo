@@ -1,8 +1,9 @@
-package org.grouplens.lenskit.nstrat;
+package org.grouplens.lenskit.nstrat.adaptative;
 
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongSortedSet;
+import org.grouplens.lenskit.nstrat.NeighborStrategy;
 import org.grouplens.lenskit.vectors.SparseVector;
 import org.lenskit.knn.item.model.ItemItemBuildContext;
 import org.lenskit.knn.item.model.NeighborIterationStrategy;
@@ -11,16 +12,15 @@ import org.lenskit.util.collections.LongUtils;
 import java.util.*;
 
 /**
- * Created by diogo on 11-07-2017.
+ * Created by diogo on 28-07-2017.
  */
-public class AdaptativePopularNeighborIterationStrategy implements NeighborIterationStrategy {
+public class ExponentialDecayNeighborIterationStrategy implements NeighborIterationStrategy {
 
     private HashMap<Integer, Integer> pdf = null; //probability density function
     private int a = 0; //min value when neighbor is 1
     private int b = 0; //baseline value
     private double c = 0.0; //decay ratio
-    private int sum = 0; //total number of entries from biggest item's neighbor
-    private Integer[] number_entries_array_keyset;
+    private Integer[] entries_array_set;
     private Long[] items_array_set;
 
     @Override
@@ -30,61 +30,45 @@ public class AdaptativePopularNeighborIterationStrategy implements NeighborItera
             Set<Long> items_key_set = itemsVectorSize(strategy.buildContext).keySet();
             items_array_set = items_key_set.toArray(new Long[items_key_set.size()]);
             pdf = getHistogram(strategy);
+            Set<Integer> entries_key_set = pdf.keySet();
+            entries_array_set = entries_key_set.toArray(new Integer[entries_key_set.size()]);
+            a = entries_array_set[entries_key_set.size()-1];
             b = strategy.number_neighbors;
+            c = 1/(a/15.0);
             //a = pdf.get(1) - b;
             //c = 1/(a/2.5);
-            //a = arraykeyset[keyset.size()-1]
-            //c = 1/(a/1500)
-            Set<Integer> keyset = pdf.keySet();
-            number_entries_array_keyset = keyset.toArray(new Integer[keyset.size()]);
-            for (int i = 1; i<=b+1; i++){
-                sum += number_entries_array_keyset[keyset.size()-i];
-            }
         }
 
         SparseVector vec = strategy.buildContext.itemVector(item);
         int n_entries = vec.size();
+        double n_neighbors = a * Math.exp(-n_entries * c) + b;
 
-        //For loop to find the range of entries and where to start/stop picking items
-        int value = 0;
+        //Get position where items with same number of entries start in our list
         int start_position = 0;
-        int end_position = 0;
-        for(int i = 0; i < number_entries_array_keyset.length; i++){
-            int entry = number_entries_array_keyset[i];
-            end_position += pdf.get(entry);
-            if(entry < n_entries){
-                start_position += pdf.get(entry);
-                continue;
-            }
-            value += entry * pdf.get(entry);
-            if (value >= sum){
+        for(int i = 0; i < entries_array_set.length; i++){
+            int entry = entries_array_set[i];
+            start_position += pdf.get(entry);
+            if(entry > n_entries){
                 break;
             }
         }
 
-        //For loop which actually collects the neighbor array
         List<Long> items_list = new ArrayList();
-        for(int i = start_position; i != end_position; i++){
-            //Check condition to avoid adding the item itself to his neighborhood
-            if(items_array_set[i] == item) {
-                if(start_position!=0){
-                    //All items with just 1 entry screw the array access and wont miss the additional item
-                    items_list.add(items_array_set[start_position - 1]);
-                }
-                continue;
+        int left_i = start_position-1;
+        for(int right_i = start_position; right_i < start_position + n_neighbors; right_i++){
+            Long aux_item;
+            if (right_i < items_array_set.length){
+                aux_item = items_array_set[right_i];
+                if(aux_item != item)
+                    items_list.add(aux_item);
             }
-            items_list.add(items_array_set[i]);
+            else{
+                aux_item = items_array_set[left_i];
+                if(aux_item != item)
+                    items_list.add(aux_item);
+                left_i--;
+            }
         }
-
-        //For loop to fill neighbor array if needed
-        for(int i = 2; value < sum; i++){
-            long new_item = items_array_set[start_position - i];
-            items_list.add(new_item);
-            SparseVector vec_aux = strategy.buildContext.itemVector(new_item);
-            value += vec_aux.size();
-        }
-
-        //double n_neighbors = a * Math.exp(-n_entries * c) + b;
 
         LongList items = LongUtils.asLongList(items_list);
         strategy.iterator = items.iterator();
