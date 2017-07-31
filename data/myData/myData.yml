@@ -8,4 +8,4 @@ items:
   format: csv
   header: false
   entity_type: item
-  columns: [id, name]
+  columns: [id,name]

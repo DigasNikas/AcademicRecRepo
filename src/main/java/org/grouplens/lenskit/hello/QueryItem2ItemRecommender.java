@@ -8,6 +8,7 @@ import org.grouplens.lenskit.util.Merger;
 import org.lenskit.LenskitRecommender;
 import org.lenskit.LenskitRecommenderEngine;
 import org.lenskit.LenskitRecommenderEngineLoader;
+import org.lenskit.api.ItemBasedItemRecommender;
 import org.lenskit.api.ItemRecommender;
 import org.lenskit.data.dao.DataAccessObject;
 import org.lenskit.data.entities.CommonTypes;
@@ -22,14 +23,14 @@ import java.util.List;
 /**
  * Created by diogo on 16-10-2016.
  */
-public class QueryRecommender {
+public class QueryItem2ItemRecommender {
 
     private ConfigReader config_reader;
     private DataAccessObject dao;
     private Logger logger;
     private HeapMemoryPrinter printer;
 
-    public QueryRecommender(ConfigReader config_reader,DataAccessObject dao, Logger logger, HeapMemoryPrinter printer){
+    public QueryItem2ItemRecommender(ConfigReader config_reader,DataAccessObject dao, Logger logger, HeapMemoryPrinter printer){
         this.config_reader = config_reader;
         this.dao = dao;
         this.logger = logger;
@@ -38,9 +39,9 @@ public class QueryRecommender {
 
     public void query(){
         //List<String> users = converter();
-        LongSet users_set = dao.getEntityIds(CommonTypes.USER);
-        Long[] users_array = users_set.toArray(new Long[users_set.size()]);
-        List<Long> users = Arrays.asList(users_array);
+        LongSet items_set = dao.getEntityIds(CommonTypes.ITEM);
+        Long[] items_array = items_set.toArray(new Long[items_set.size()]);
+        List<Long> items = Arrays.asList(items_array);
         File modelFile = new File(config_reader.getModelFile());
         Stopwatch timerX;
         LenskitRecommenderEngineLoader loader;
@@ -58,7 +59,7 @@ public class QueryRecommender {
             try (LenskitRecommender rec = engine.createRecommender(dao)) {
                 logger.info("obtained recommender from engine");
                 // we want to recommend items
-                ItemRecommender irec = rec.getItemRecommender();
+                ItemBasedItemRecommender irec = rec.getItemBasedItemRecommender();
                 assert irec != null; // not null because we configured one
                 if (irec == null) {
                     logger.error("recommender has no global recommender");
@@ -69,19 +70,19 @@ public class QueryRecommender {
 
                 int n_threads = Runtime.getRuntime().availableProcessors();
                 Thread Pool[] = new Thread[n_threads];
-                int items_by_thread = users.size()/n_threads;
+                int items_by_thread = items.size()/n_threads;
 
                 logger.info("Building {} Threads", n_threads);
                 for(int i = 0; i < n_threads; i++ ){
                     int thread_items = items_by_thread * i;
                     if(i == n_threads-1){
-                        items_by_thread = users.size() - ((n_threads - 1) * items_by_thread) - 1;
-                        Pool[i] = new Thread(new QueryThread(thread_items, items_by_thread,
-                                config_reader.getAmountRecs(), users, irec, dao, i));
+                        items_by_thread = items.size() - ((n_threads - 1) * items_by_thread) - 1;
+                        Pool[i] = new Thread(new QueryItem2ItemThread(thread_items, items_by_thread,
+                                config_reader.getAmountRecs(), items, irec, dao, i));
                     }
                     else {
-                        Pool[i] = new Thread(new QueryThread(thread_items, items_by_thread,
-                                config_reader.getAmountRecs(), users, irec, dao, i));
+                        Pool[i] = new Thread(new QueryItem2ItemThread(thread_items, items_by_thread,
+                                config_reader.getAmountRecs(), items, irec, dao, i));
                     }
                     Pool[i].start();
                 }
@@ -95,31 +96,10 @@ public class QueryRecommender {
                 printer.print(3);
                 Merger merger = new Merger(n_threads,config_reader.getTestOutputFile());
                 merger.merge_output();
-                Merger merger_n = new Merger(n_threads,"results/test_network.txt");
-                merger_n.merge_network();
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    public List<String> converter() {
-        List<String> users = new ArrayList<>();
-        String input_file = config_reader.getTestInputFile();
-        String line = "";
-
-        // RECEBER OS NOMES DE INPUT
-        try (BufferedReader br = new BufferedReader(new FileReader(input_file))) {
-            while ((line = br.readLine()) != null) {
-                if(line.length()!=0)
-                    users.add(line);
-            }
-        } catch (IOException e) {
-            System.err.println("Error loading the Test Input. Please take a look at this file");
-            e.printStackTrace();
-            System.exit(1);
-        }
-        return users;
     }
 
 }

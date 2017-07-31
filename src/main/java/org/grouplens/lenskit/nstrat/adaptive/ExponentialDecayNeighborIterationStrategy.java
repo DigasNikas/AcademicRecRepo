@@ -1,4 +1,4 @@
-package org.grouplens.lenskit.nstrat.adaptative;
+package org.grouplens.lenskit.nstrat.adaptive;
 
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongList;
@@ -34,9 +34,7 @@ public class ExponentialDecayNeighborIterationStrategy implements NeighborIterat
             entries_array_set = entries_key_set.toArray(new Integer[entries_key_set.size()]);
             a = entries_array_set[entries_key_set.size()-1];
             b = strategy.number_neighbors;
-            c = 1/(a/15.0);
-            //a = pdf.get(1) - b;
-            //c = 1/(a/2.5);
+            c = 1/(a/b);
         }
 
         SparseVector vec = strategy.buildContext.itemVector(item);

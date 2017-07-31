@@ -96,12 +96,12 @@ public final class IterativeCrossValidation
     public static void main(final String[] args) {
         String modelPath = "data/ml-100k/model/";
         String recPath = "data/ml-100k/recommendations/";
-        String dataFile = "data/myData/rivalu.data";
+        String dataFile = "data/myData/u.data";
         int nFolds = N_FOLDS;
         logger.info("reading config file");
         ConfigReader config_reader = new ConfigReader(args[0]);
         config_reader.readConfigFile();
-        //prepareSplits(nFolds, dataFile, modelPath);
+        prepareSplits(nFolds, dataFile, modelPath);
         recommend(nFolds, modelPath, recPath, config_reader);
         evaluate(nFolds, modelPath, recPath);
     }
@@ -117,7 +117,7 @@ public final class IterativeCrossValidation
 
         boolean perUser = true;
         long seed = SEED;
-        Parser<Long, Long> parser = new MovielensParser();
+        Parser<Long, Long> parser = new SimpleCSVParser();
 
         DataModelIF<Long, Long> data = null;
         try {

@@ -15,11 +15,28 @@ public class Merger {
         this.fileName = fileName;
     }
 
-    public void merge() throws IOException{
+    public void merge_output() throws IOException{
         BufferedWriter bw = new BufferedWriter(new FileWriter(fileName));
         // Merge thread files
         for (int j = 0; j < numberOfProcessors; j++) {
             File file = new File("etc/test_output"+j+".txt");
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            String line;
+
+            while ((line = br.readLine()) != null) {
+                bw.write(line+"\n");
+            }
+            br.close();
+            file.delete();
+        }
+        bw.close();
+    }
+
+    public void merge_network() throws IOException{
+        BufferedWriter bw = new BufferedWriter(new FileWriter(fileName));
+        // Merge thread files
+        for (int j = 0; j < numberOfProcessors; j++) {
+            File file = new File("etc/test_network"+j+".txt");
             BufferedReader br = new BufferedReader(new FileReader(file));
             String line;
 

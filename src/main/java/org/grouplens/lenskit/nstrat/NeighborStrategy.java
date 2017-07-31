@@ -9,6 +9,7 @@ import org.lenskit.knn.item.model.NeighborIterationStrategy;
 import org.lenskit.util.collections.LongUtils;
 
 import java.io.BufferedWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

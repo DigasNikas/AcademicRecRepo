@@ -28,6 +28,7 @@ import org.grouplens.lenskit.vectors.SparseVector;
 import org.lenskit.knn.item.ItemSimilarity;
 
 import java.io.BufferedWriter;
+import java.io.IOException;
 
 /**
  * Abstraction of strategies for iterating over potential neighboring items.  This is used by the

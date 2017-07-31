@@ -101,6 +101,7 @@ public class HelloLenskit implements Runnable{
         }
         else if (mode.equals("Query")){
             QueryRecommender query = new QueryRecommender(config_reader,dao,logger,printer);
+            //QueryItem2ItemRecommender query = new QueryItem2ItemRecommender(config_reader,dao,logger,printer);
             query.query();
         }
     }

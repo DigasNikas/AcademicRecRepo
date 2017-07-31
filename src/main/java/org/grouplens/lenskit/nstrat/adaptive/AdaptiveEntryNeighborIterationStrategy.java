@@ -1,4 +1,4 @@
-package org.grouplens.lenskit.nstrat.adaptative;
+package org.grouplens.lenskit.nstrat.adaptive;
 
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongList;
@@ -8,21 +8,29 @@ import org.lenskit.knn.item.model.ItemItemBuildContext;
 import org.lenskit.knn.item.model.NeighborIterationStrategy;
 import org.lenskit.util.collections.LongUtils;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * Created by diogo on 11-07-2017.
  */
-public class AdaptativeEntryNeighborIterationStrategy implements NeighborIterationStrategy {
+public class AdaptiveEntryNeighborIterationStrategy implements NeighborIterationStrategy{
 
     private int min_neig = 0; //baseline value
     private int sum = 0; //total number of entries from biggest item's neighbor
     private Long[] items_array_set = null;
+    private BufferedWriter bufferedWriter;
 
     @Override
     public LongIterator neighborIterator(NeighborStrategy strategy, long item){
         if (items_array_set == null) {
             //Do only once
+            try {
+                File fileTwo = new File("teste");
+                FileOutputStream fos = new FileOutputStream(fileTwo);
+                PrintWriter pw = new PrintWriter(fos, true);
+                bufferedWriter = new BufferedWriter(pw);
+            }catch (Exception e){}
             Set<Long> items_key_set = itemsVectorSize(strategy.buildContext).keySet();
             items_array_set = items_key_set.toArray(new Long[items_key_set.size()]);
             min_neig = strategy.number_neighbors;
@@ -72,6 +80,10 @@ public class AdaptativeEntryNeighborIterationStrategy implements NeighborIterati
 
         LongList items = LongUtils.asLongList(items_list);
         strategy.iterator = items.iterator();
+        try {
+            bufferedWriter.write(n_entries + "," + items.size() + "\n");
+            bufferedWriter.flush();
+        } catch (Exception e){}
         return strategy.iterator;
     }
 
