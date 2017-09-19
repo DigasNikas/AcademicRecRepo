@@ -192,7 +192,7 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
 
             NeighborStrategy strategy = new NeighborStrategy(buildContext, itemSimilarity,
                     threshold, bufferedWriter, minCommonUsers);
-            NeighborIterationStrategy n_strategy = new NeighborFactory().GetNeighborStrategy(7);
+            NeighborIterationStrategy n_strategy = new NeighborFactory().GetNeighborStrategy(6);
 
             while (outer.hasNext()) {
                 final long itemId1 = outer.nextLong();

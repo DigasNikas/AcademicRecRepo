@@ -36,11 +36,13 @@ public class RandomNeighborIterationStrategy implements NeighborIterationStrateg
         Long iterationCount = 0L;
         while(true) {
             iterationCount++;
+            if (iterationCount > 3000)
+                break;
             long itemId2 = generateNewRandom(strategy, itemId2Previous+iterationCount);
             Map.Entry<Long,Long> pair = new java.util.AbstractMap.SimpleEntry<>(itemId1,itemId2);
-            if (strategy.used.contains(pair)) {
+            /*if (strategy.used.contains(pair)) {
                 continue;
-            }
+            }*/
             strategy.used.add(pair);
             SparseVector vec2 = strategy.buildContext.itemVector(itemId2);
             if(strategy.checkConditionFail(itemId1, vec1, itemId2, vec2))

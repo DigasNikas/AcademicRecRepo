@@ -95,7 +95,7 @@ public class QueryRecommender {
                 printer.print(3);
                 Merger merger = new Merger(n_threads,config_reader.getTestOutputFile());
                 merger.merge_output();
-                Merger merger_n = new Merger(n_threads,"results/test_network.txt");
+                Merger merger_n = new Merger(n_threads,"results/test_network.csv");
                 merger_n.merge_network();
             }
         } catch (Exception e) {

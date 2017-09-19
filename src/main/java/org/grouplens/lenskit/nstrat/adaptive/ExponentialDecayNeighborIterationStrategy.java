@@ -18,7 +18,7 @@ public class ExponentialDecayNeighborIterationStrategy implements NeighborIterat
 
     private HashMap<Integer, Integer> pdf = null; //probability density function
     private int a = 0; //min value when neighbor is 1
-    private int b = 0; //baseline value
+    private double b = 0; //baseline value
     private double c = 0.0; //decay ratio
     private Integer[] entries_array_set;
     private Long[] items_array_set;
@@ -31,7 +31,7 @@ public class ExponentialDecayNeighborIterationStrategy implements NeighborIterat
             items_array_set = items_key_set.toArray(new Long[items_key_set.size()]);
             pdf = getHistogram(strategy);
             Set<Integer> entries_key_set = pdf.keySet();
-            entries_array_set = entries_key_set.toArray(new Integer[entries_key_set.size()]);
+                entries_array_set = entries_key_set.toArray(new Integer[entries_key_set.size()]);
             a = entries_array_set[entries_key_set.size()-1];
             b = strategy.number_neighbors;
             c = 1/(a/b);
@@ -39,7 +39,7 @@ public class ExponentialDecayNeighborIterationStrategy implements NeighborIterat
 
         SparseVector vec = strategy.buildContext.itemVector(item);
         int n_entries = vec.size();
-        double n_neighbors = a * Math.exp(-n_entries * c) + b;
+        double n_neighbors = a * Math.exp(-(n_entries) * c) + b;
 
         //Get position where items with same number of entries start in our list
         int start_position = 0;
@@ -54,14 +54,18 @@ public class ExponentialDecayNeighborIterationStrategy implements NeighborIterat
         List<Long> items_list = new ArrayList();
         int left_i = start_position-1;
         for(int right_i = start_position; right_i < start_position + n_neighbors; right_i++){
-            Long aux_item;
+            Long aux_item = 0L;
             if (right_i < items_array_set.length){
                 aux_item = items_array_set[right_i];
                 if(aux_item != item)
                     items_list.add(aux_item);
             }
             else{
-                aux_item = items_array_set[left_i];
+                try{
+                    aux_item = items_array_set[left_i];
+                }catch (Exception e){
+                    System.out.println("poop");
+                }
                 if(aux_item != item)
                     items_list.add(aux_item);
                 left_i--;
