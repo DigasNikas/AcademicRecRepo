@@ -22,8 +22,12 @@ package org.lenskit.knn.item.model;
 
 import com.google.common.base.Stopwatch;
 import it.unimi.dsi.fastutil.longs.*;
+import org.grouplens.lenskit.hello.HelloLenskit;
 import org.grouplens.lenskit.nstrat.*;
 import org.grouplens.lenskit.transform.threshold.Threshold;
+import org.grouplens.lenskit.util.ConfigReader;
+import org.lenskit.LenskitConfiguration;
+import org.lenskit.config.ConfigHelpers;
 import org.lenskit.util.ScoredIdAccumulator;
 import org.grouplens.lenskit.vectors.SparseVector;
 import org.lenskit.inject.Transient;
@@ -63,6 +67,7 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
     private final int modelSize;
     private static volatile int items_done;
     private static volatile int nitems;
+    private ConfigReader config_reader;
 
     @Inject
     public ItemItemModelProvider(@Transient ItemSimilarity similarity,
@@ -79,6 +84,8 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
         modelSize = size;
         items_done = 0;
         nitems = 0;
+        config_reader = new ConfigReader("etc/config");
+        config_reader.readConfigFile();
     }
 
     @Override
@@ -191,8 +198,8 @@ public class ItemItemModelProvider implements Provider<ItemItemModel> {
             int inside_items = 0;
 
             NeighborStrategy strategy = new NeighborStrategy(buildContext, itemSimilarity,
-                    threshold, bufferedWriter, minCommonUsers);
-            NeighborIterationStrategy n_strategy = new NeighborFactory().GetNeighborStrategy(6);
+                    threshold, bufferedWriter, minCommonUsers, config_reader.getStrategyNeighbors());
+            NeighborIterationStrategy n_strategy = new NeighborFactory().GetNeighborStrategy(config_reader.getStrategy());
 
             while (outer.hasNext()) {
                 final long itemId1 = outer.nextLong();

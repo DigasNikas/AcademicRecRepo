@@ -2,6 +2,7 @@ package org.grouplens.lenskit.nstrat;
 
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import org.grouplens.lenskit.transform.threshold.Threshold;
+import org.grouplens.lenskit.util.ConfigReader;
 import org.grouplens.lenskit.vectors.SparseVector;
 import org.lenskit.knn.item.ItemSimilarity;
 import org.lenskit.knn.item.model.ItemItemBuildContext;
@@ -25,19 +26,21 @@ public class NeighborStrategy {
     public ItemSimilarity itemSimilarity;
     public int minCommonUsers;
     public LongIterator iterator;
-    public int number_neighbors = 20;
+    public int number_neighbors;
     public int state;
     public List<Map.Entry<Long,Long>> used;
 
     public NeighborStrategy(){}
 
     public NeighborStrategy(ItemItemBuildContext context, ItemSimilarity itemSimilarity,
-                            Threshold threshold, BufferedWriter bufferedWriter, int minCommonUsers){
+                            Threshold threshold, BufferedWriter bufferedWriter, int minCommonUsers,
+                            int number_neighbors){
         this.bufferedWriter = bufferedWriter;
         this.buildContext = context;
         this.threshold = threshold;
         this.itemSimilarity = itemSimilarity;
         this.minCommonUsers = minCommonUsers;
+        this.number_neighbors = number_neighbors;
     }
 
     public LongIterator neighborIterator(NeighborIterationStrategy strategy, long item){

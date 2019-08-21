@@ -61,11 +61,7 @@ public class ExponentialDecayNeighborIterationStrategy implements NeighborIterat
                     items_list.add(aux_item);
             }
             else{
-                try{
-                    aux_item = items_array_set[left_i];
-                }catch (Exception e){
-                    System.out.println("poop");
-                }
+                aux_item = items_array_set[left_i];
                 if(aux_item != item)
                     items_list.add(aux_item);
                 left_i--;

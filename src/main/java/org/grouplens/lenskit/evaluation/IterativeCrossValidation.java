@@ -85,7 +85,7 @@ public final class IterativeCrossValidation
     /**
      * Utility classes should not have a public or default constructor.
      */
-    private IterativeCrossValidation() {
+    public IterativeCrossValidation() {
     }
 
     /**
@@ -96,7 +96,7 @@ public final class IterativeCrossValidation
     public static void main(final String[] args) {
         String modelPath = "data/ml-100k/model/";
         String recPath = "data/ml-100k/recommendations/";
-        String dataFile = "data/myData/u.data";
+        String dataFile = "data/myData/ratings_1M.csv";
         int nFolds = N_FOLDS;
         logger.info("reading config file");
         ConfigReader config_reader = new ConfigReader(args[0]);

@@ -1,0 +1,12 @@
+build/
+results/
+classes/
+.idea/
+.gradle/
+gradle/
+*.jar
+*.ods
+*.log
+teste
+src/main/resources/
+data/ml-100k/

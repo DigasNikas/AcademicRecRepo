@@ -75,5 +75,11 @@ public class ConfigReader {
     public int getAmountRecs(){
         return Integer.valueOf(this.config_file.get(6));
     }
+    public int getStrategyNeighbors(){
+        return Integer.valueOf(this.config_file.get(7));
+    }
+    public int getStrategy(){
+        return Integer.valueOf(this.config_file.get(8));
+    }
 
 }

@@ -1,10 +1,10 @@
 ratings:
-  file: u.data
+  file: ratings_1M.csv
   format: csv
   header: false
   entity_type: rating
 items:
-  file: u.item
+  file: movies_1M.csv
   format: csv
   header: false
   entity_type: item

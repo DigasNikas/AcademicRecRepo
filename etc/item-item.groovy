@@ -26,4 +26,4 @@ bind (UserMeanBaseline, ItemScorer) to ItemMeanRatingItemScorer
 // and normalize ratings by baseline prior to computing similarities
 bind UserVectorNormalizer to BaselineSubtractingUserVectorNormalizer
 
-set NeighborhoodSize to 20		
+set NeighborhoodSize to 100		
